@@ -1,0 +1,80 @@
+#!/bin/bash
+# First-boot work. Runs one time (flag: /var/lib/pf1007l/firstboot-pending).
+# It does not block the USB gadget, the serial console or sshd.
+#   1. clock check (the frame has no clock battery)
+#   2. grow the root partition and file system to the end of the SD card
+#   3. pacman keyring: init + populate (a private key made on THIS device)
+. /usr/lib/pf1007l/pf-lib.sh
+LOG=/var/log/pf1007l-firstboot.log
+exec >> "$LOG" 2>&1
+echo "==== first boot, uptime $(pf_uptime) s"
+pf_stage 80-firstboot-start
+rc=0
+
+# 1. Clock. systemd already moved the clock to the image build time
+#    (/usr/lib/clock-epoch) when the RTC was behind. Check it, do not trust it.
+epoch=$(stat -c %Y /usr/lib/clock-epoch 2>/dev/null || echo 0)
+now=$(date +%s)
+if [ "$now" -lt "$epoch" ]; then
+	date -u -s "@$epoch" && echo "clock was behind the image build time: set to it"
+fi
+echo "clock: $(date -u) (image build time: $(date -u -d "@$epoch"))"
+pf_stage 81-firstboot-clock "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+
+# 2. Grow the root partition. Only on an SD card: never on an eMMC.
+grow() {
+	src=$(findmnt -n -o SOURCE /) || return 1
+	part=${src#/dev/}
+	[ -e "/sys/class/block/$part/partition" ] || { echo "root $src is not a partition"; return 1; }
+	disk=$(basename "$(readlink -f "/sys/class/block/$part/..")")
+	num=$(cat "/sys/class/block/$part/partition")
+	type=$(cat "/sys/class/block/$disk/device/type" 2>/dev/null)
+	if [ "$type" != SD ]; then echo "root disk $disk has type '$type', not SD: no resize"; return 1; fi
+	disk_sectors=$(cat "/sys/class/block/$disk/size")
+	start=$(cat "/sys/class/block/$part/start")
+	size=$(cat "/sys/class/block/$part/size")
+	echo "disk $disk: $disk_sectors sectors; partition $num: start $start, size $size"
+	if [ $((start + size + 2048)) -ge "$disk_sectors" ]; then
+		echo "the partition already ends at the end of the card"
+	else
+		echo ", +" | sfdisk --no-reread --force -N "$num" "/dev/$disk" || return 1
+		partx --update --nr "$num" "/dev/$disk" || return 1
+		echo "partition $num now has $(cat "/sys/class/block/$part/size") sectors"
+	fi
+	resize2fs "$src" || return 1
+	df -h /
+}
+if grow; then pf_stage 82-firstboot-rootfs-grown "$(df -h --output=size / | tail -n 1 | tr -d ' ')"
+else pf_stage 82-firstboot-rootfs-grow-FAILED; rc=1; fi
+
+# 3. pacman keyring. Offline: it uses the key files of archlinuxarm-keyring.
+#    gpg refuses to sign when the clock moves back during the work ("key was created
+#    N seconds in the future"), for example when a time server corrects the clock.
+#    So: a stamp file says "complete", and a failed try starts again from nothing.
+if [ -e /var/lib/pf1007l/pacman-keyring-ok ]; then
+	echo "pacman keyring is complete"
+else
+	ok=0
+	for try in 1 2 3; do
+		gpgconf --homedir /etc/pacman.d/gnupg --kill all 2>/dev/null
+		rm -rf /etc/pacman.d/gnupg
+		echo "pacman keyring: try $try, clock $(date -u '+%H:%M:%S')"
+		if pacman-key --init && pacman-key --populate archlinuxarm; then ok=1; break; fi
+		sleep 10
+	done
+	gpgconf --homedir /etc/pacman.d/gnupg --kill all 2>/dev/null
+	if [ "$ok" = 1 ]; then
+		touch /var/lib/pf1007l/pacman-keyring-ok
+		pf_stage 83-firstboot-pacman-keyring-ok "try $try"
+	else
+		pf_stage 83-firstboot-pacman-keyring-FAILED; rc=1
+	fi
+fi
+
+if [ "$rc" = 0 ]; then
+	rm -f /var/lib/pf1007l/firstboot-pending
+	pf_stage 89-firstboot-done
+else
+	pf_stage 89-firstboot-INCOMPLETE "see $LOG; it runs again at the next start"
+fi
+exit "$rc"

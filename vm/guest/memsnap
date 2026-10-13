@@ -1,0 +1,22 @@
+#!/bin/bash
+# Guest helper (root): memory of the whole VM and of each process of the test session.
+#   memsnap LABEL   -> prints free -m, zram state, PSI, and one line per process (PSS split from smaps_rollup,
+#                      plus the part of PSS in the llvmpipe libraries: libLLVM and libgallium, from smaps)
+echo "## $1  $(date -u +%FT%TZ)  kernel $(uname -r)"
+free -m
+echo "# zram:"; zramctl --output NAME,ALGORITHM,DISKSIZE,DATA,COMPR,TOTAL 2>/dev/null; swapon --show=NAME,SIZE,USED,PRIO --noheadings
+echo "# psi memory: $(tr '\n' ' ' < /proc/pressure/memory 2>/dev/null)"
+grep -E '^(MemTotal|MemFree|MemAvailable|Buffers|Cached|Shmem|SwapTotal|SwapFree|AnonPages|Mapped|Slab|KernelStack|PageTables|CmaTotal|CmaFree):' /proc/meminfo | tr -s ' ' | tr '\n' ';'; echo
+printf '%-22s %6s %7s %7s %7s %7s %7s %7s %8s %8s\n' process pid rss pss pss_anon pss_file pss_shm swap llvm_pss gallium_pss
+for pid in $(ps -u frame -o pid= --sort=-rss); do
+  [[ -r /proc/$pid/smaps_rollup ]] || continue
+  name=$(tr -d '\0' < /proc/$pid/comm 2>/dev/null) || continue
+  awk -v n="$name" -v p="$pid" '
+    FILENAME ~ /rollup/ { v[$1]=$2; next }
+    /^[0-9a-f]+-[0-9a-f]+ / { lib = ($6 ~ /libLLVM/) ? "llvm" : (($6 ~ /libgallium/) ? "gal" : "") }
+    /^Pss:/ && lib != "" { s[lib] += $2 }
+    END { printf "%-22s %6d %7.1f %7.1f %7.1f %7.1f %7.1f %7.1f %8.1f %8.1f\n", n, p, v["Rss:"]/1024, v["Pss:"]/1024,
+          v["Pss_Anon:"]/1024, v["Pss_File:"]/1024, v["Pss_Shmem:"]/1024, v["Swap:"]/1024, s["llvm"]/1024, s["gal"]/1024 }
+  ' /proc/$pid/smaps_rollup /proc/$pid/smaps 2>/dev/null
+done
+echo "# sum of PSS, user frame: $(for pid in $(ps -u frame -o pid=); do awk '/^Pss:/{print $2}' /proc/$pid/smaps_rollup 2>/dev/null; done | awk '{s+=$1} END{printf "%.1f MiB", s/1024}')"

@@ -1,0 +1,10 @@
+# PF1007L: settings for the U-Boot boot script (boot.scr). Plain text, one
+# "name=value" in each line. Lines that start with "#" do nothing.
+#
+# pf_mode=auto    (default) Linux; but "USB disk mode" after a Linux start that the Mac did not see
+# pf_mode=linux   always Linux
+# pf_mode=ums     always USB disk mode: the Mac sees this card as a read-only USB disk
+#pf_mode=auto
+#
+# Another boot menu file:
+#pf_extlinux=/extlinux/extlinux.conf

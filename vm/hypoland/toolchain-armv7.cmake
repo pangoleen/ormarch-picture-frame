@@ -1,0 +1,22 @@
+# CMake toolchain: native clang on an arm64 host -> armv7h (hard float), with an Arch Linux ARM armv7h sysroot.
+set(CMAKE_SYSTEM_NAME Linux)
+set(CMAKE_SYSTEM_PROCESSOR armv7l)
+set(TRIPLE armv7l-unknown-linux-gnueabihf)
+set(CMAKE_SYSROOT /sysroot)
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_C_COMPILER_TARGET ${TRIPLE})
+set(CMAKE_CXX_COMPILER_TARGET ${TRIPLE})
+# Same baseline as ALARM armv7h makepkg.conf (-march=armv7-a -mfloat-abi=hard -mfpu=neon); the Cortex-A7 has VFPv4.
+set(ARMV7_FLAGS "-march=armv7-a -mfloat-abi=hard -mfpu=neon")
+set(CMAKE_C_FLAGS_INIT "${ARMV7_FLAGS}")
+set(CMAKE_CXX_FLAGS_INIT "${ARMV7_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-fuse-ld=lld")
+set(CMAKE_SHARED_LINKER_FLAGS_INIT "-fuse-ld=lld")
+set(CMAKE_FIND_ROOT_PATH /sysroot)
+set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)   # tools (hyprwayland-scanner, python, git) run on the host
+set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
+set(ENV{PKG_CONFIG_SYSROOT_DIR} /sysroot)
+set(ENV{PKG_CONFIG_LIBDIR} /sysroot/usr/lib/pkgconfig:/sysroot/usr/share/pkgconfig)

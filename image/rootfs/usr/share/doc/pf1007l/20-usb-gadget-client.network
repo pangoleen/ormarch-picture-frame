@@ -1,0 +1,11 @@
+# Alternative for Mac "Internet Sharing": the frame is a DHCP client on the USB link.
+[Match]
+Type=gadget
+
+[Link]
+RequiredForOnline=no
+
+[Network]
+DHCP=yes
+MulticastDNS=yes
+LinkLocalAddressing=yes

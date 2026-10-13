@@ -1,0 +1,20 @@
+[Unit]
+Description=PF1007L USB gadget (ACM serial + NCM network to the Mac)
+Documentation=file:/usr/share/doc/pf1007l/README.md
+DefaultDependencies=no
+Wants=sys-kernel-config.mount
+After=sys-kernel-config.mount systemd-modules-load.service boot.mount
+Before=sysinit.target shutdown.target
+Conflicts=shutdown.target
+ConditionPathExists=!/etc/pf1007l/no-gadget
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# The initramfs normally did this already; then this is a no-op.
+ExecStart=/usr/lib/pf1007l/pf-gadget up 5
+ExecStartPost=-/usr/lib/pf1007l/pf-stage 40-systemd-gadget-unit
+# No ExecStop: the link to the Mac stays up until the power goes.
+
+[Install]
+WantedBy=sysinit.target

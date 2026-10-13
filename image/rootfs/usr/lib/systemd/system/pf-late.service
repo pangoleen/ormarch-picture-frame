@@ -1,0 +1,14 @@
+[Unit]
+Description=PF1007L stage marker "multi-user" and log copy to the SD card (FAT)
+After=sshd.service systemd-networkd.service systemd-user-sessions.service network.target getty.target pf-basic.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/lib/pf1007l/pf-stage 60-multi-user
+ExecStart=-/usr/lib/pf1007l/pf-collect multi-user
+# At shutdown, before /boot is unmounted:
+ExecStop=-/usr/lib/pf1007l/pf-collect shutdown
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=PF1007L USB state watcher (stage markers + start confirmation for U-Boot)
+DefaultDependencies=no
+After=pf-gadget.service
+Before=shutdown.target
+Conflicts=shutdown.target
+
+[Service]
+ExecStart=/usr/lib/pf1007l/pf-usbwatch
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=sysinit.target

@@ -1,0 +1,17 @@
+# /etc/systemd/network/20-usb0.network - USB gadget link to the Mac.
+# The frame is 10.55.0.1 and gives the Mac an address by DHCP. No route to the
+# Internet. DRAFT: not run on the frame.
+[Match]
+Name=usb0
+
+[Network]
+Address=10.55.0.1/24
+DHCPServer=yes
+LinkLocalAddressing=ipv6
+MulticastDNS=yes
+
+[DHCPServer]
+PoolOffset=2
+PoolSize=8
+EmitDNS=no
+EmitRouter=no

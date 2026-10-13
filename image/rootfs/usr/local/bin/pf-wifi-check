@@ -1,0 +1,27 @@
+#!/bin/sh
+# pf-wifi-check          read-only: is the Wi-Fi chip on the SDIO bus, and which chip?
+# pf-wifi-check --load   load the AIC8800 driver by hand (only after the check passes)
+# The driver is NOT loaded automatically (see /usr/share/doc/pf1007l/WIFI.md).
+echo "device tree: $(tr -d '\0' < /proc/device-tree/model 2>/dev/null)"
+found=0
+for d in /sys/bus/sdio/devices/*; do
+	[ -e "$d/uevent" ] || continue
+	found=1; echo "== $d"; cat "$d/uevent"
+done
+if [ "$found" = 0 ]; then
+	echo "No SDIO device. The 'min' and 'pmic' device trees keep the Wi-Fi bus off."
+	echo "Start with the 'full' device tree first:  pf-bootsel full  &&  sudo reboot"
+	exit 1
+fi
+if ! grep -qi 'SDIO_ID=C8A1:C08D' /sys/bus/sdio/devices/*/uevent; then
+	echo "The SDIO ID is NOT c8a1:c08d (AIC8800DC). Stop and record the ID."
+	exit 2
+fi
+echo "SDIO ID c8a1:c08d = AIC8800DC/DW. Firmware in the image: revision U02 only."
+if [ "${1:-}" = --load ]; then
+	sudo modprobe aic8800_bsp && sudo modprobe aic8800_fdrv
+	sleep 3; dmesg | grep -i -E 'aic|rwnx' | tail -n 40
+	ip -br link
+else
+	echo "To load the driver:  pf-wifi-check --load   (then: dmesg | grep -i -E 'aic|rwnx')"
+fi

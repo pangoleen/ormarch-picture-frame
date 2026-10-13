@@ -1,0 +1,8 @@
+# Disk images, kernel copy, keys, caches and run-time sockets: local only
+out/
+keys/
+cache/
+run/
+*.qcow2
+*.raw
+*.img

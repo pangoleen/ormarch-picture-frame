@@ -1,0 +1,7 @@
+#!/bin/sh
+# Pacman PreTransaction guard. Refuses kernel or chromium transactions.
+# Kernel modules and DTB match 7.2.10-1 only. Chromium has no armv7 build.
+echo "PF1007L guard: this transaction touches a blocked package." >&2
+echo "Blocked: linux-armv7, linux-armv7-headers, chromium." >&2
+echo "Keep kernel 7.2.10-1. Use port/frame/armv7-packages.txt." >&2
+exit 1

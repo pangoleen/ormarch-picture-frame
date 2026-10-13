@@ -1,0 +1,20 @@
+#!/bin/sh
+# Copy the kernel log to the Mac-readable (FAT) boot partition, so that a boot with no
+# screen, no serial line and no USB link still leaves evidence on the card.
+# DRAFT: not run on the frame. The log has no serial number of the frame, but it can
+# have MAC addresses: remove them before a commit (project rule).
+DIR=${PF1007L_LOGDIR:-/boot/pf1007l-log}
+mkdir -p "$DIR" || exit 0
+n=$(ls "$DIR" 2>/dev/null | sed -n 's/^boot-\([0-9]*\)-.*/\1/p' | sort -n | tail -1)
+n=$(printf '%04d' $(( ${n:-0} + 1 )))
+for t in 0 20 60 180; do
+	sleep "$t"
+	{
+		echo "# uptime: $(cut -d' ' -f1 /proc/uptime) s   cmdline: $(cat /proc/cmdline)"
+		echo "# modules: $(cut -d' ' -f1 /proc/modules | tr '\n' ' ')"
+		echo "# sdio: $(cat /sys/bus/sdio/devices/*/uevent 2>/dev/null | tr '\n' ' ')"
+		echo "# drm: $(for f in /sys/class/drm/*/status; do [ -f "$f" ] && echo "$f=$(cat "$f")"; done | tr '\n' ' ')"
+		dmesg
+	} > "$DIR/boot-$n-t$t.txt" 2>&1
+	sync
+done

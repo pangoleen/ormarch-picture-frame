@@ -1,0 +1,27 @@
+[Unit]
+Description=Hyprland on the PF1007L panel (user frame)
+Documentation=file:///usr/share/doc/pf1007l/README.md
+After=systemd-user-sessions.service seatd.service getty@tty1.service
+Wants=seatd.service
+Conflicts=getty@tty1.service
+
+[Service]
+User=frame
+PAMName=login
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+StandardInput=tty-fail
+StandardOutput=journal
+StandardError=journal
+UtmpIdentifier=tty1
+UtmpMode=user
+Environment=MESA_GLES_VERSION_OVERRIDE=3.0
+Environment=XDG_SESSION_TYPE=wayland
+ExecStartPre=/bin/sh -c 'for i in $$(seq 1 40); do [ -e /dev/dri/card0 ] && [ -e /dev/dri/renderD128 ] && exit 0; sleep 1; done; echo no display or GPU device; exit 1'
+ExecStart=/usr/bin/start-hyprland
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

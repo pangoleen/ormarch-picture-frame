@@ -1,0 +1,15 @@
+#!/bin/sh
+# pf-bootsel            list the boot labels
+# pf-bootsel <label>    make <label> the default for the next start
+# The file is /boot/extlinux/extlinux.conf on the FAT partition. You can also
+# edit its DEFAULT line on the Mac with a text editor.
+F=/boot/extlinux/extlinux.conf
+[ -r "$F" ] || { echo "cannot read $F (is /boot mounted?)" >&2; exit 1; }
+if [ $# -eq 0 ]; then
+	echo "default: $(sed -n 's/^DEFAULT[ \t]*//p' "$F")"
+	echo "labels:"; sed -n 's/^LABEL[ \t]*/  /p' "$F"
+	exit 0
+fi
+grep -q "^LABEL[ 	]*$1\$" "$F" || { echo "no label '$1' in $F" >&2; exit 1; }
+[ "$(id -u)" = 0 ] || exec sudo "$0" "$@"
+sed -i "s/^DEFAULT[ \t].*/DEFAULT $1/" "$F" && sync && echo "next start: $1"

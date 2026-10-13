@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "frame.keyboard",
+  "name": "Touch keyboard",
+  "version": "1.0.0",
+  "description": "Show or hide the frame's on-screen keyboard",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "Touch keyboard",
+    "category": "Input",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

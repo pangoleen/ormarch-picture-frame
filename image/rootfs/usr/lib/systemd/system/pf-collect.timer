@@ -1,0 +1,12 @@
+[Unit]
+Description=PF1007L log copy to the SD card: 20 s, 60 s and 180 s after the start, then each 15 minutes
+
+[Timer]
+OnBootSec=20s
+OnBootSec=60s
+OnBootSec=180s
+OnUnitActiveSec=15min
+AccuracySec=5s
+
+[Install]
+WantedBy=timers.target

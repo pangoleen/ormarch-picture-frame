@@ -1,0 +1,27 @@
+# USB network to the Mac. The frame is 10.55.0.1 and gives the Mac an address
+# by DHCP. No router and no DNS in the lease: the Mac keeps its own internet.
+# For Mac "Internet Sharing" later, see /usr/share/doc/pf1007l/README.md.
+[Match]
+Type=gadget
+
+[Link]
+RequiredForOnline=no
+
+[Network]
+Address=10.55.0.1/24
+DHCPServer=yes
+LinkLocalAddressing=ipv6
+MulticastDNS=yes
+LLMNR=no
+ConfigureWithoutCarrier=yes
+IPv6AcceptRA=no
+
+[DHCPServer]
+PoolOffset=10
+PoolSize=20
+DefaultLeaseTimeSec=600
+MaxLeaseTimeSec=3600
+EmitDNS=no
+EmitRouter=no
+EmitNTP=no
+EmitTimezone=no

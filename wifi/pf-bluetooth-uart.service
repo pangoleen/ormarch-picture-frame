@@ -1,0 +1,20 @@
+[Unit]
+Description=PF1007L native Bluetooth LE over UART1
+Requires=dev-ttyS1.device
+After=systemd-modules-load.service dev-ttyS1.device
+Before=bluetooth.service
+
+[Service]
+Type=simple
+# The working Wi-Fi BSP downloads the Bluetooth patch over SDIO first.
+ExecStartPre=/usr/bin/modprobe aic8800_fdrv
+ExecStartPre=/usr/bin/modprobe hci_uart
+ExecStartPre=/usr/local/bin/pf-bt-uart-probe --flow
+ExecStart=/usr/local/bin/pf-bt-uart-attach
+Restart=on-failure
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,60 @@
+--- a/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/btsdio.c
++++ b/src/SDIO/driver_fw/driver/aic8800/aic8800_fdrv/btsdio.c
+@@ -138,10 +138,13 @@
+ int bt_sdio_recv(u8 *data,u32 data_len)
+ {
+ 	struct sk_buff *skb;
+-	int type= data[0];
++	int type;
+ 	struct hci_dev *hdev;
+ 	u32 len = data_len;
+ 	int ret=0;
++	if (data_len < 1)
++		return -EINVAL;
++	type = data[0];
+ 	hdev = hci_dev_get(0);
+     if (!hdev) {
+         AICWFDBG(LOGERROR,"%s: Failed to get hci dev[NULL]", __func__);
+@@ -151,6 +154,7 @@
+ 	skb = alloc_skb(len-1,GFP_ATOMIC);
+ 	if(!skb){
+ 		AICWFDBG(LOGERROR, "alloc skb fail %s \n",__func__);
++		return -ENOMEM;
+ 	}
+ 	memcpy(skb_put(skb,len-1) ,(data+1), len-1);
+ 	hdev->stat.byte_rx += len;
+@@ -165,7 +169,7 @@
+ 	if(ret < 0){
+ 		AICWFDBG(LOGERROR, "hci_recv_frame fail %d\n",ret);
+ 		hdev->stat.err_rx++;
+-		kfree_skb(skb);
++		/* hci_recv_frame owns skb, including the failure path. */
+ 	}
+ 	return 0;
+ }
+@@ -254,7 +258,7 @@
+ 	hdev->bus = HCI_SDIO;
+ 	hci_set_drvdata(hdev, data);
+ 
+-	hdev->dev_type = HCI_PRIMARY;
++	/* Linux 7.2 removed dev_type; primary is the only controller type. */
+ 
+ 	data->hdev = hdev;
+ 
+@@ -289,10 +293,12 @@
+ 	if (!data)
+ 		return;
+ 
++	/* Unregister closes the controller and calls flush using data. */
++	hci_unregister_dev(hdev);
++	cancel_work_sync(&data->work);
++	skb_queue_purge(&data->txq);
++	ghdev = NULL;
++	hci_free_dev(hdev);
+ 	kfree(data);
+-
+-	hci_unregister_dev(hdev);
+-
+-	hci_free_dev(hdev);
+ }
+ #endif

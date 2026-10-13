@@ -1,0 +1,22 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L accelerometer test overlay.
+ *
+ * Apply only to a copy of the known-good full or full-bluetooth DTB with
+ * fdtoverlay. It changes one existing node: SC7A20 at TWI1 address 0x19.
+ * It does not claim PB06 because the interrupt polarity is not known; the
+ * st_accel driver can be checked through raw IIO reads first.
+ */
+/dts-v1/;
+/plugin/;
+
+&i2c1 {
+	/* Repeat the bus cell sizes so standalone overlay compilation is clean. */
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	accelerometer@19 {
+		reg = <0x19>;
+		status = "okay";
+	};
+};

@@ -1,0 +1,1 @@
+root=/dev/mmcblk0p2 rw rootwait console=ttyGS0,115200 console=tty0 psi=1 cpufreq.default_governor=schedutil ignore_loglevel log_buf_len=1M

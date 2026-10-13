@@ -1,0 +1,6 @@
+
+  PF1007L photo frame - Arch Linux ARM (armv7h), bring-up image
+  pf-status            what works now            pf-status save   copy logs to the SD card
+  pf-bootsel           list / choose the device tree for the next start (min, pmic, full)
+  pf-wifi-check        Wi-Fi gate (read-only)    docs: /usr/share/doc/pf1007l/
+

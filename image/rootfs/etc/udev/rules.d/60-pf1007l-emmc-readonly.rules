@@ -1,0 +1,7 @@
+# Project safety rule 3: no write to the internal eMMC before the last phase.
+# The device trees of this image keep the eMMC controller disabled, so no eMMC
+# block device exists. This rule is a second layer: if an eMMC shows up (a
+# device tree with &mmc2 enabled), Linux makes it read-only at once.
+# "MMC" = eMMC. The MicroSD card has type "SD" and is not matched.
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="mmcblk[0-9]", ATTRS{type}=="MMC", ATTR{force_ro}="1"
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="mmcblk[0-9]*", ATTRS{type}=="MMC", RUN+="/usr/bin/blockdev --setro /dev/%k"

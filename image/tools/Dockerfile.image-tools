@@ -1,0 +1,7 @@
+# Tools to assemble the SD-card image: FAT, ext4, MBR. Native (arm64 on the Mac).
+# Base: the U-Boot build image of the project (ubuntu:24.04 + cross gcc + dtc + mkimage).
+ARG BASE=pf1007l-uboot-build
+FROM ${BASE}
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    dosfstools mtools fdisk e2fsprogs attr xxd \
+    && rm -rf /var/lib/apt/lists/*

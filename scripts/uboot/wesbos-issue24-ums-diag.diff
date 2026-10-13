@@ -1,0 +1,287 @@
+diff --git a/arch/arm/dts/sun8i-a33-pf1007l-backup-u-boot.dtsi b/arch/arm/dts/sun8i-a33-pf1007l-backup-u-boot.dtsi
+--- /dev/null
++++ b/arch/arm/dts/sun8i-a33-pf1007l-backup-u-boot.dtsi
+@@ -0,0 +1,7 @@
++#include "sunxi-u-boot.dtsi"
++
++/* PF1007L: 8-bit high-speed eMMC reads fail on this board (PR #6, issue #16); use 4-bit at 26 MHz */
++&mmc2 {
++	bus-width = <4>;
++	max-frequency = <26000000>;
++};
+diff --git a/cmd/usb_mass_storage.c b/cmd/usb_mass_storage.c
+--- a/cmd/usb_mass_storage.c
++++ b/cmd/usb_mass_storage.c
+@@ -8,6 +8,7 @@
+ 
+ #include <blk.h>
+ #include <command.h>
++#include <env.h>
+ #include <console.h>
+ #include <errno.h>
+ #include <g_dnl.h>
+@@ -15,6 +16,7 @@
+ #include <part.h>
+ #include <usb.h>
+ #include <usb_mass_storage.h>
++#include <asm/io.h>
+ #include <watchdog.h>
+ #include <linux/delay.h>
+ #include <linux/printk.h>
+@@ -24,8 +26,24 @@
+ {
+ 	struct blk_desc *block_dev = &ums_dev->block_dev;
+ 	lbaint_t blkstart = start + ums_dev->start_sector;
++	lbaint_t n = 0;
++	int tries;
+ 
+-	return blk_dread(block_dev, blkstart, blkcnt, buf);
++	/*
++	 * PF1007L: the eMMC occasionally fails a read (the controller's CRC check
++	 * catches it). Retry instead of failing the SCSI command, which makes the
++	 * host drop the whole disk.
++	 */
++	for (tries = 1; tries <= 8; tries++) {
++		n = blk_dread(block_dev, blkstart, blkcnt, buf);
++		if (n == blkcnt)
++			break;
++		printf("UMS diag: read retry %d at sector " LBAF " (got " LBAF " of " LBAF ")\n",
++		       tries, blkstart, n, blkcnt);
++		writel(0x14af, (void *)0x01c20cb0);	/* feed the hardware watchdog */
++		mdelay(20);
++	}
++	return n;
+ }
+ 
+ static int ums_write_sector(struct ums *ums_dev,
+@@ -211,6 +229,10 @@
+ 		puts("\r\n");
+ 	}
+ 
++	ulong diag_start = get_timer(0);
++	ulong diag_limit = env_get_ulong("ums_diag_timeout", 10, 0) * 1000;
++
++	printf("UMS diag: cable detected, entering main loop (timeout %lu ms)\n", diag_limit);
+ 	while (1) {
+ 		dm_usb_gadget_handle_interrupts(udc);
+ 
+@@ -224,6 +246,7 @@
+ 			if (rc == -EPIPE)
+ 				printf("\rCTRL+C - Operation aborted\n");
+ 
++			printf("UMS diag: main thread returned %d\n", rc);
+ 			rc = CMD_RET_SUCCESS;
+ 			goto cleanup_register;
+ 		}
+@@ -236,6 +259,12 @@
+ 				rc = CMD_RET_SUCCESS;
+ 				goto cleanup_register;
+ 			}
++		}
++
++		if (diag_limit && get_timer(diag_start) > diag_limit) {
++			printf("UMS diag: timeout after %lu ms\n", diag_limit);
++			rc = CMD_RET_SUCCESS;
++			goto cleanup_register;
+ 		}
+ 
+ 		schedule();
+diff --git a/common/console.c b/common/console.c
+--- a/common/console.c
++++ b/common/console.c
+@@ -828,10 +828,15 @@
+ {
+ 	int ret;
+ 
+-	ret = membuf_new((struct membuf *)&gd->console_out,
+-			 gd->flags & GD_FLG_RELOC ?
+-				CONFIG_CONSOLE_RECORD_OUT_SIZE :
+-				CONFIG_CONSOLE_RECORD_OUT_SIZE_F);
++	if (gd->flags & GD_FLG_RELOC) {
++		/* PF1007L diag: record into SRAM A2 so the log survives a SoC reset */
++		memset((void *)0x48000, 0, 0x4000);
++		membuf_init((struct membuf *)&gd->console_out, (char *)0x48000, 0x4000);
++		ret = 0;
++	} else {
++		ret = membuf_new((struct membuf *)&gd->console_out,
++				 CONFIG_CONSOLE_RECORD_OUT_SIZE_F);
++	}
+ 	if (ret)
+ 		return ret;
+ 	ret = membuf_new((struct membuf *)&gd->console_in,
+diff --git a/configs/pf1007l_lowpower_defconfig b/configs/pf1007l_lowpower_defconfig
+--- /dev/null
++++ b/configs/pf1007l_lowpower_defconfig
+@@ -0,0 +1,21 @@
++CONFIG_ARM=y
++CONFIG_ARCH_SUNXI=y
++CONFIG_DEFAULT_DEVICE_TREE="sun8i-a33-pf1007l-backup"
++CONFIG_SPL=y
++CONFIG_MACH_SUN8I_A33=y
++CONFIG_DRAM_CLK=456
++CONFIG_DRAM_ZQ=15291
++CONFIG_MMC_SUNXI_SLOT_EXTRA=2
++# CONFIG_VIDEO_SUNXI is not set
++# CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
++CONFIG_CONS_INDEX=5
++CONFIG_BOOTDELAY=-2
++CONFIG_USB_MUSB_GADGET=y
++CONFIG_CMD_USB_MASS_STORAGE=y
++CONFIG_CRC32_VERIFY=y
++CONFIG_CONSOLE_RECORD=y
++CONFIG_CONSOLE_RECORD_OUT_SIZE=0x4000
++CONFIG_CMD_HASH=y
++# CONFIG_WDT is not set
++CONFIG_SUNXI_NO_PMIC=y
++CONFIG_SYS_CLK_FREQ=408000000
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -240,6 +240,7 @@
+ /* #define DUMP_MSGS */
+ 
+ #include <config.h>
++#include <env.h>
+ #include <div64.h>
+ #include <hexdump.h>
+ #include <log.h>
+@@ -247,6 +248,16 @@
+ #include <console.h>
+ #include <g_dnl.h>
+ #include <dm/devres.h>
++#include <asm/io.h>
++#include <time.h>
++
++/* PF1007L diag: progress/idle tracking and a pet for the hardware watchdog armed by the script */
++static ulong ums_diag_last_cmd;
++static unsigned long long ums_diag_bytes;
++static void ums_diag_pet(void)
++{
++	writel(0x14af, (void *)0x01c20cb0);	/* sun6i WDOG0_CTRL: key 0xa57, restart */
++}
+ #include <linux/bug.h>
+ 
+ #include <linux/err.h>
+@@ -621,30 +632,7 @@
+ 
+ static void busy_indicator(void)
+ {
+-	static int state;
+-
+-	switch (state) {
+-	case 0:
+-		puts("\r|"); break;
+-	case 1:
+-		puts("\r/"); break;
+-	case 2:
+-		puts("\r-"); break;
+-	case 3:
+-		puts("\r\\"); break;
+-	case 4:
+-		puts("\r|"); break;
+-	case 5:
+-		puts("\r/"); break;
+-	case 6:
+-		puts("\r-"); break;
+-	case 7:
+-		puts("\r\\"); break;
+-	default:
+-		state = 0;
+-	}
+-	if (state++ == 8)
+-		state = 0;
++	/* PF1007L diag: silent, so the SRAM console log does not fill up */
+ }
+ 
+ static int sleep_thread(struct fsg_common *common)
+@@ -665,20 +653,41 @@
+ 
+ 		if (k == 10) {
+ 			/* Handle START-STOP UNIT */
+-			if (common->eject)
++			if (common->eject) {
++				printf("UMS diag: exit because of host START STOP UNIT (eject)\n");
+ 				return -EPIPE;
++			}
+ 
+ 			/* Handle CTRL+C */
+-			if (ctrlc())
+-				return -EPIPE;
++			if (ctrlc()) {
++				if (env_get("ums_ignore_ctrlc")) {
++					printf("UMS diag: ignored a CTRL+C from the console\n");
++				} else {
++					printf("UMS diag: exit because of CTRL+C from the console\n");
++					return -EPIPE;
++				}
++			}
+ 
+ 			/* Check cable connection */
+-			if (!g_dnl_board_usb_cable_connected())
+-				return -EIO;
++			if (!g_dnl_board_usb_cable_connected()) {
++				if (env_get("ums_ignore_cable")) {
++					printf("UMS diag: cable check says disconnected (ignored)\n");
++				} else {
++					printf("UMS diag: exit because the cable check says disconnected\n");
++					return -EIO;
++				}
++			}
+ 
++			/* No command from the host for a long time: it gave up on us */
++			if (ums_diag_bytes > (256ULL << 20) && get_timer(ums_diag_last_cmd) > 60000) {
++				printf("UMS diag: no host command for 60 s after %llu MiB read; exiting\n", ums_diag_bytes >> 20);
++				return -EPIPE;
++			}
++
+ 			k = 0;
+ 		}
+ 
++		ums_diag_pet();
+ 		schedule();
+ 		dm_usb_gadget_handle_interrupts(udcdev);
+ 	}
+@@ -767,10 +776,15 @@
+ 				      lldiv(file_offset, curlun->blksize),
+ 				      lldiv(amount, curlun->blksize),
+ 				      (char __user *)bh->buf);
+-		if (!rc)
++		if (!rc) {
++			printf("UMS diag: eMMC read error at byte %llu (after %llu MiB)\n", (unsigned long long)file_offset, ums_diag_bytes >> 20);
+ 			return -EIO;
++		}
+ 
+ 		nread = rc * curlun->blksize;
++		if (((ums_diag_bytes + nread) >> 28) != (ums_diag_bytes >> 28))
++			printf("UMS diag: %llu MiB read, now at byte %llu\n", (ums_diag_bytes + nread) >> 20, (unsigned long long)file_offset);
++		ums_diag_bytes += nread;
+ 
+ 		VLDBG(curlun, "file read %u @ %llu -> %d\n", amount,
+ 				(unsigned long long) file_offset,
+@@ -1323,6 +1337,9 @@
+ 		return -EINVAL;
+ 	}
+ 
++	printf("UMS diag: host START STOP UNIT, byte4=%#x\n", common->cmnd[4]);
++	if (env_get("ums_ignore_eject"))
++		return 0;
+ 	common->eject = 1;
+ 
+ 	return 0;
+@@ -1787,6 +1804,8 @@
+ 	static char		unknown[16];
+ 	struct fsg_lun		*curlun = &common->luns[common->lun];
+ 
++	ums_diag_last_cmd = get_timer(0) | 1;
++
+ 	dump_cdb(common);
+ 
+ 	/* Wait for the next buffer to become available for data or status */
+@@ -2267,6 +2286,7 @@
+ static int fsg_set_alt(struct usb_function *f, unsigned intf, unsigned alt)
+ {
+ 	struct fsg_dev *fsg = fsg_from_func(f);
++	printf("UMS diag: host set_alt intf %u alt %u\n", intf, alt);
+ 	fsg->common->new_fsg = fsg;
+ 	raise_exception(fsg->common, FSG_STATE_CONFIG_CHANGE);
+ 	return 0;

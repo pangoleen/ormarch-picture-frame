@@ -1,0 +1,240 @@
+name	list	omarchy_required_version	armv7h_repo	armv7h_version	armv7h_builddate	armv7h_installed_MiB	arch_x86_64	alarm_aarch64	omarchy_repo_x86_64_stable	omarchy_repo_aarch64_edge	omarchy_pkgbuild	armv7h_deps_resolve	status	action	note
+aether	base		-	-			-	-	4.32.0-2	4.32.0-2	yes		missing (Omarchy-built package, no armv7h build)	drop	
+alsa-utils	base		extra	1.2.16-1	2026-06-04	2.3	extra 1.2.16-1	extra 1.2.16-1	-	-	no	OK	fine	keep	
+asdcontrol	base		-	-			-	-	1:0.6.0-2	1:0.6.0-2	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+avahi	base		extra	1:0.9rc5-1	2026-06-26	1.9	extra 1:0.9rc5-1	extra 1:0.9rc5-1	-	-	no	OK	fine	keep	
+bash-completion	base		extra	2.18.0-1	2026-07-06	1.0	extra 2.18.0-1	extra 2.18.0-1	-	-	no	OK	fine	keep	
+bat	base		extra	0.26.1-3	2026-09-20	4.5	extra 0.26.1-3	extra 0.26.1-3	-	-	no	OK	fine	keep	
+bluez	base		extra	5.87-2	2026-07-05	1.7	extra 5.87-2	extra 5.87-2	-	-	no	OK	fine	keep	
+bluez-tools	base		extra	0.2.0-6	2024-07-12	0.9	extra 0.2.0-6	extra 0.2.0-6	-	-	no	OK	fine	keep	
+bluez-utils	base		extra	5.87-2	2026-07-05	3.4	extra 5.87-2	extra 5.87-2	-	-	no	OK	fine	keep	
+bolt	base		extra	0.9.11-3	2026-08-13	0.5	extra 0.9.11-3	extra 0.9.11-3	-	-	no	OK	fine	keep	
+brightnessctl	base		extra	0.5.1-3	2024-07-12	0.0	extra 0.5.1-3	extra 0.5.1-3	-	-	no	OK	fine	keep	
+btop	base		extra	1.4.7-1	2026-05-01	1.5	extra 1.4.7-1	extra 1.4.7-1	-	-	no	OK	fine	keep	
+chromium	base		-	-			extra 154.0.8037.97-1	extra 153.0.8010.36-1	-	-	no		missing (Arch x86_64 has it, ALARM armv7h does not)	replace with firefox (extra 157.0-1, installable)	ALARM builds chromium for aarch64 only (PKGBUILD buildarch=8)
+clang	base		extra	23.1.1-1	2026-10-02	245.2	extra 23.1.1-1	extra 23.1.1-1	-	-	no	OK	fine	keep	
+cliamp	base		-	-			-	-	2.0.1-1	2.3.0-2	yes		missing (Omarchy-built package, no armv7h build)	drop	
+cups	base		extra	2:2.4.20-1	2026-10-06	12.6	extra 2:2.4.20-1	extra 2:2.4.20-1	-	-	no	OK	fine	keep	
+cups-filters	base		extra	2.0.1-3	2026-09-21	1.0	extra 2.0.1-3	extra 2.0.1-3	-	-	no	OK	fine	keep	
+cups-pk-helper	base		extra	0.2.7-2	2024-07-01	0.4	extra 0.2.7-2	extra 0.2.7-2	-	-	no	OK	fine	keep	
+ddcutil	base		extra	3.0.2-1	2026-09-24	2.7	extra 3.0.2-1	extra 3.0.2-1	-	-	no	OK	fine	keep	
+docker	base		extra	1:29.9.0-1	2026-10-09	120.4	extra 1:29.9.0-1	extra 1:29.9.0-1	-	-	no	OK	fine	drop on the frame	
+docker-buildx	base		extra	0.38.0-1	2026-10-09	65.4	extra 0.38.0-1	extra 0.38.0-1	-	-	no	OK	fine	drop on the frame	
+docker-compose	base		extra	5.6.0-1	2026-10-03	28.2	extra 5.6.0-1	extra 5.6.0-1	-	-	no	OK	fine	drop on the frame	
+dosfstools	base		core	4.2-5	2024-08-25	0.4	core 4.2-5	core 4.2-5	-	-	no	OK	fine	keep	
+dotnet-runtime	base		-	-			extra 10.0.12.sdk112-1	-	-	-	no		missing (Arch x86_64 has it, ALARM armv7h does not)	drop (only pinta needs it)	
+dua-cli	base		extra	2.45.1-1	2026-09-30	4.5	extra 2.45.1-1	extra 2.45.1-1	-	-	no	OK	fine	keep	
+evince	base		extra	1:48.4-2	2026-10-08	12.3	extra 1:48.4-2	extra 1:48.4-2	-	-	no	OK	fine	keep	
+exfatprogs	base		extra	1.4.3-1	2026-08-14	0.5	extra 1.4.3-1	extra 1.4.3-1	-	-	no	OK	fine	keep	
+expac	base		extra	10-13	2026-08-10	0.0	extra 10-13	extra 10-13	-	-	no	OK	fine	keep	
+eza	base		extra	0.23.5-2	2026-07-09	1.6	extra 0.23.5-2	extra 0.23.5-2	-	-	no	OK	fine	keep	
+fakeroot	base		core	1:1.37.2-3	2026-07-27	0.1	core 1:1.37.2-3	core 1:1.37.2-3	-	-	no	OK	fine	keep	
+fastfetch	base		extra	2.63.1-1	2026-05-13	1.6	extra 2.69.0-1	extra 2.69.0-1	-	-	no	OK	older	keep	
+fcitx5	base		extra	5.1.23-1	2026-09-25	18.8	extra 5.1.23-1	extra 5.1.23-1	-	-	no	OK	fine	keep	
+fcitx5-gtk	base		extra	5.1.7-1	2026-06-20	0.3	extra 5.1.7-1	extra 5.1.7-1	-	-	no	OK	fine	keep	
+fcitx5-qt	base		extra	5.1.16-2	2026-10-07	1.6	extra 5.1.16-2	extra 5.1.16-2	-	-	no	OK	fine	keep	
+fd	base		extra	10.5.0-3	2026-09-02	2.9	extra 10.5.0-3	extra 10.5.0-3	-	-	no	OK	fine	keep	
+ffmpegthumbnailer	base		extra	2.3.1-1	2026-08-29	0.3	extra 2.3.1-1	extra 2.3.1-1	-	-	no	OK	fine	keep	
+fontconfig	base		extra	2:2.18.3-2	2026-08-23	1.2	extra 2:2.18.3-2	extra 2:2.18.3-2	-	-	no	OK	fine	keep	
+foot	base		extra	1.28.0-2	2026-09-08	0.7	extra 1.28.0-2	extra 1.28.0-2	-	-	no	OK	fine	keep	
+fzf	base		extra	0.74.5-1	2026-10-11	5.4	extra 0.74.5-1	extra 0.74.5-1	-	-	no	OK	fine	keep	
+git	base		extra	2.56.0-1	2026-09-30	53.3	extra 2.56.0-1	extra 2.56.0-1	-	-	no	OK	fine	keep	
+gnome-keyring	base		extra	1:51.1-1	2026-10-07	3.6	extra 1:51.1-1	extra 1:51.1-1	-	-	no	OK	fine	keep	
+gnome-themes-extra	base		extra	1:3.28-1	2025-11-11	4.2	extra 1:3.28-1	extra 1:3.28-1	-	-	no	OK	fine	keep	
+grim	base		extra	1.5.0-2	2025-08-05	0.0	extra 1.5.0-2	extra 1.5.0-2	-	-	no	OK	fine	keep	
+gpu-screen-recorder	base		extra	6.1.3-1	2026-09-23	0.5	extra 6.1.3-1	extra 6.1.3-1	5.12.3-2	-	no	OK	fine	keep	
+gum	base		extra	2.0.2-1	2026-09-25	13.7	extra 2.0.2-1	extra 2.0.2-1	-	-	no	OK	fine	keep	
+gvfs-mtp	base		extra	1.62.0-3	2026-10-08	0.1	extra 1.62.0-3	extra 1.62.0-3	-	-	no	OK	fine	keep	
+gvfs-nfs	base		extra	1.62.0-3	2026-10-08	0.0	extra 1.62.0-3	extra 1.62.0-3	-	-	no	OK	fine	keep	
+gvfs-smb	base		extra	1.62.0-3	2026-10-08	0.1	extra 1.62.0-3	extra 1.62.0-3	-	-	no	OK	fine	keep	
+herdr	base		-	-			-	-	0.8.2-1	0.9.1-1	yes		missing (Omarchy-built package, no armv7h build)	drop	
+hyprland	base	>=0.55 (Lua config); Omarchy ships 0.56.2	extra	0.56.2-4	2026-10-03	62.7	extra 0.56.2-4	extra 0.56.2-4	-	0.56.2-5	yes	OK	fine	keep (GPU question is separate: needs GLES 3.0)	config/hypr/hyprland.lua; omarchy-hyprland-titlebars pins =0.56.2
+hyprland-guiutils	base		extra	0.2.2-4	2026-09-25	0.7	extra 0.2.2-4	extra 0.2.2-4	-	0.2.2-3	no	OK	fine	keep	
+hyprland-preview-share-picker	base		-	-			-	-	0.2.1-1	0.2.1-3	yes		missing (Omarchy-built package, no armv7h build)	drop (and remove its line in config/hypr/xdph.conf)	
+hyprpicker	base		extra	0.4.7-4	2026-09-04	0.3	extra 0.4.7-4	extra 0.4.7-4	-	-	no	OK	fine	keep	
+hyprsunset	base		extra	0.4.0-3	2026-07-20	0.3	extra 0.4.0-3	extra 0.4.0-3	-	-	no	OK	fine	keep	
+imagemagick	base		extra	7.1.2.33-1	2026-10-11	19.0	extra 7.1.2.33-1	extra 7.1.2.33-1	-	-	no	OK	fine	keep	
+imv	base		extra	5.0.1-2	2026-07-10	0.2	extra 5.0.1-2	extra 5.0.1-2	-	-	no	OK	fine	keep	
+inetutils	base		core	2.8-1	2026-05-06	1.0	core 2.8-1	core 2.8-1	-	-	no	OK	fine	keep	
+inotify-tools	base		extra	4.26.270-1	2026-10-07	1.5	extra 4.26.270-1	extra 4.26.270-1	-	-	no	OK	fine	keep	
+inxi	base		extra	3.3.41.1-1	2026-07-10	1.4	extra 3.3.41.1-1	extra 3.3.41.1-1	-	-	no	OK	fine	keep	
+networkmanager	base		extra	1.58.1-2	2026-10-08	17.7	extra 1.58.1-2	extra 1.58.1-2	-	-	no	OK	fine	keep	
+jq	base		extra	1.8.2-1	2026-06-21	0.5	extra 1.8.2-1	extra 1.8.2-1	-	-	no	OK	fine	keep	
+kdenlive	base		extra	23.08.5-1	2024-02-15	71.5	extra 26.08.2-1	extra 26.08.2-1	-	-	no	FAIL	broken	drop (also not installable)	built 2024-02-15; depends on kfilemetadata5 and purpose5, which no armv7h repo has
+kernel-modules-hook	base		extra	0.1.7-3	2024-07-13	0.0	extra 0.1.7-3	extra 0.1.7-3	-	-	no	OK	fine	keep	
+lazydocker	base		extra	0.25.2-1	2026-04-20	12.4	extra 0.25.2-1	extra 0.25.2-1	-	-	no	OK	fine	keep	
+lazygit	base		extra	0.66.1-1	2026-10-11	20.3	extra 0.66.1-1	extra 0.66.1-1	-	-	no	OK	fine	keep	
+less	base		core	1:710-1	2026-09-20	0.3	core 1:710-1	core 1:710-1	-	-	no	OK	fine	keep	
+libsecret	base		core	0.21.8.2-1	2026-09-17	1.1	core 0.21.8.2-1	core 0.21.8.2-1	-	-	no	OK	fine	keep	
+libvips	base		extra	8.18.7-1	2026-09-28	5.5	extra 8.18.7-1	extra 8.18.7-1	-	-	no	OK	fine	keep	
+libyaml	base		extra	0.2.5-3	2024-07-13	0.2	extra 0.2.5-3	extra 0.2.5-3	-	-	no	OK	fine	keep	
+libreoffice-fresh	base		extra	26.8.1-1	2026-10-09	405.9	extra 26.8.1-1	extra 26.8.1-1	-	-	no	OK	fine	drop on the frame	
+llvm	base		extra	23.1.1-1	2026-10-01	129.2	extra 23.1.1-1	extra 23.1.1-1	-	-	no	OK	fine	keep	
+localsend	base		-	-			-	-	1.18.2-1	1.18.2-1	yes		missing (Omarchy-built package, no armv7h build)	drop	
+lua51	base		extra	5.1.5-13	2025-05-31	0.7	extra 5.1.5-13	extra 5.1.5-13	-	-	no	OK	fine	keep	
+luarocks	base		extra	3.13.0-5	2026-03-29	0.0	extra 3.13.0-5	extra 3.13.0-5	-	-	no	OK	fine	keep	
+man-db	base		core	2.13.1-2	2026-07-18	2.4	core 2.13.1-2	core 2.13.1-2	-	-	no	OK	fine	keep	
+mariadb-libs	base		extra	13.0.2-2	2026-09-23	22.9	extra 13.0.2-2	extra 13.0.2-2	-	-	no	OK	fine	keep	
+mise-bin	base		-	-			-	-	2026.10.7-1	2026.10.7-1	yes		missing (Omarchy-built package, no armv7h build)	build ourselves (wrap the upstream linux-armv7 binary) or drop	
+moonlight-qt	base		extra	6.2.0-1	2026-10-05	2.0	extra 6.2.0-1	extra 6.2.0-1	-	-	no	OK	fine	keep	
+mpv	base		extra	1:0.41.0-6	2026-08-30	5.6	extra 1:0.41.0-6	extra 1:0.41.0-6	-	-	no	OK	fine	keep	
+mpv-mpris	base		extra	1.3-1	2026-09-18	0.0	extra 1.3-1	extra 1.3-1	-	-	no	OK	fine	keep	
+nautilus	base		extra	51.1-1	2026-10-12	13.7	extra 51.1-1	extra 51.0.1-2	-	-	no	OK	fine	keep	
+nautilus-python	base		extra	4.2.0-1	2026-09-20	0.2	extra 4.2.0-1	extra 4.2.0-1	-	-	no	OK	fine	keep	
+gnome-disk-utility	base		extra	46.1-3	2026-07-30	6.5	extra 46.1-3	extra 46.1-3	-	-	no	OK	fine	keep	
+noto-fonts	base		extra	1:2026.10.01-1	2026-10-01	106.8	extra 1:2026.10.01-1	extra 1:2026.10.01-1	-	-	no	OK	fine	keep	
+noto-fonts-cjk	base		extra	20240730-1	2025-02-02	298.8	extra 20240730-1	extra 20240730-1	-	-	no	OK	fine	keep	
+noto-fonts-emoji	base		extra	1:2.051-1	2025-09-16	10.2	extra 1:2.051-1	extra 1:2.051-1	-	-	no	OK	fine	keep	
+nss-mdns	base		extra	0.15.1-3	2026-10-07	0.1	extra 0.15.1-3	extra 0.15.1-3	-	-	no	OK	fine	keep	
+nvim	base	>=0.9.0	-	-			extra 0.12.6-1	-	-	-	no		missing (Arch x86_64 has it, ALARM armv7h does not)	use the name neovim; see neovim	omarchy-nvim PKGBUILD depends on neovim>=0.9.0
+obs-studio	base		-	-			extra 32.2.2-1	-	-	32.2.2-1	yes		missing (Arch x86_64 and Omarchy repo have it, ALARM armv7h does not)	drop	
+obsidian	base		-	-			extra 1.14.4-2	-	-	1.14.4-1	yes		missing (Arch x86_64 and Omarchy repo have it, ALARM armv7h does not)	drop	
+omacalc	base		-	-			-	-	0.2.2-1	0.2.2-1	yes		missing (Omarchy-built package, no armv7h build)	optional: build ourselves (Qt6 C++)	
+omacut	base		-	-			-	-	0.4.0-1	0.4.0-1	yes		missing (Omarchy-built package, no armv7h build)	drop	
+omawrite	base		-	-			-	-	0.5.0-1	0.6.0-2	yes		missing (Omarchy-built package, no armv7h build)	optional: build ourselves (Qt6 C++)	
+omarchy-nvim	base		-	-			-	-	2026.8.13-1	2026.9.21-5	yes		missing (Omarchy-built package, no armv7h build)	drop until neovim >= 0.11.2 exists on armv7h	
+pacman-contrib	base		extra	1.13.1-1	2025-12-13	0.1	extra 1.13.1-1	extra 1.13.1-1	-	-	no	OK	fine	keep	
+pamixer	base		extra	1.6-3	2024-02-21	0.2	extra 1.6-4	extra 1.6-3	-	-	no	OK	fine	keep	
+pinta	base		-	-			extra 3.1.2-2	-	3.1.2-1	3.1.2-1	yes		missing (Arch x86_64 and Omarchy repo have it, ALARM armv7h does not)	drop	
+plocate	base		extra	1.1.25-1	2026-09-06	0.3	extra 1.1.25-1	extra 1.1.25-1	-	-	no	OK	fine	keep	
+plymouth	base		extra	26.134.222-3	2026-09-28	2.0	extra 26.134.222-3	extra 26.134.222-3	-	-	no	OK	fine	keep	research/04 was not sure; it is in armv7h extra
+postgresql-libs	base		extra	18.6-2	2026-10-02	10.7	extra 18.6-2	extra 18.6-2	-	-	no	OK	fine	keep	
+power-profiles-daemon	base		extra	0.30-1	2025-02-19	0.1	extra 0.30-1	extra 0.30-1	-	-	no	OK	fine	keep	
+python-gobject	base		extra	3.58.1-1	2026-10-10	1.5	extra 3.58.1-1	extra 3.58.1-1	-	-	no	OK	fine	keep	
+python-poetry-core	base		extra	2.5.0-1	2026-09-24	1.7	extra 2.5.0-1	extra 2.5.0-1	-	-	no	OK	fine	keep	
+ttfx	base		-	-			-	-	0.3.2-1	0.5.0-2	yes		missing (Omarchy-built package, no armv7h build)	optional: build ourselves (Rust); screensaver only	
+qemu-user-static-binfmt	base		-	-			extra 11.1.2-1	-	-	1:1.10.0.13+ds.0+deb13u1-1	no		missing (Arch x86_64 and Omarchy repo have it, ALARM armv7h does not)	drop	
+qrencode	base		extra	4.1.1-4	2025-05-19	0.1	extra 4.1.1-4	extra 4.1.1-4	-	-	no	OK	fine	keep	
+qt6-imageformats	base		extra	6.12.0-1	2026-10-07	0.2	extra 6.12.0-1	extra 6.12.0-1	-	-	no	OK	fine	keep	
+quickshell	base	0.3.2 + Omarchy patch (pkgrel 4)	extra	0.3.2-1	2026-10-09	5.8	extra 0.3.2-1	extra 0.3.2-1	-	0.3.2-4	yes	OK	fine	keep the ALARM package; with Omarchy > v4.0.4 it works without the Omarchy patch	omarchy-pkgs pkgbuilds/quickshell; same version and pkgrel as Arch x86_64 and ALARM aarch64; Omarchy's own build is 0.3.2-4 with load_qtquick_611.patch
+ripgrep	base		extra	15.2.0-1	2026-07-16	3.8	extra 15.2.0-1	extra 15.2.0-1	-	-	no	OK	fine	keep	
+ruby	base		extra	3.4.10-1	2026-07-19	14.3	extra 3.4.10-1	extra 3.4.10-1	-	-	no	OK	fine	keep	
+tensaku	base		-	-			-	-	0.29.0-1	0.29.0-1	yes		missing (Omarchy-built package, no armv7h build)	drop or build later (Rust)	
+sddm	base		extra	0.21.0-7	2026-05-24	5.7	extra 0.21.0-7	extra 0.21.0-7	-	-	no	OK	fine	keep, or replace with getty autologin + uwsm	
+slurp	base		extra	1.5.0-2	2026-04-09	0.0	extra 1.5.0-2	extra 1.5.0-2	-	-	no	OK	fine	keep	
+socat	base		extra	1.8.1.3-1	2026-07-14	0.6	extra 1.8.1.3-1	extra 1.8.1.3-1	-	-	no	OK	fine	keep	
+starship	base		extra	1.26.0-1	2026-06-29	10.1	extra 1.26.0-1	extra 1.26.0-1	-	-	no	OK	fine	keep	
+sushi	base		extra	51.1-1	2026-10-08	0.3	extra 51.1-1	extra 50.0-1	-	-	no	OK	fine	keep	
+system-config-printer	base		extra	1.5.18-7	2026-08-29	8.2	extra 1.5.18-7	extra 1.5.18-7	-	-	no	OK	fine	keep	
+tesseract	base		extra	5.5.3-1	2026-07-24	5.2	extra 5.5.3-1	extra 5.5.3-1	-	-	no	OK	fine	keep	
+tesseract-data-eng	base		extra	2:4.1.0-5	2026-04-10	22.4	extra 2:4.1.0-5	extra 2:4.1.0-5	-	-	no	OK	fine	keep	
+tldr	base		extra	3.4.4-1	2026-02-10	0.1	extra 3.4.4-1	extra 3.4.4-1	-	-	no	OK	fine	keep	
+tree-sitter-cli	base		extra	0.26.9-1	2026-05-19	7.4	extra 0.26.9-1	extra 0.26.9-1	-	-	no	OK	fine	keep	
+tmux	base		extra	3.8-1	2026-10-09	1.2	extra 3.8-1	extra 3.8-1	-	-	no	OK	fine	keep	
+tobi-try	base		-	-			-	-	1.8.1-3	1.10.1-2	yes		missing (Omarchy-built package, no armv7h build)	drop	
+ttf-ia-writer	base		-	-			-	-	20181225-1	20261002.r63-2	yes		missing (Omarchy-built package, no armv7h build)	build ourselves (arch=any) or drop	
+ttf-jetbrains-mono-nerd-basic	base		-	-			-	-	3.5.1-1	3.5.1-1	yes		missing (Omarchy-built package, no armv7h build)	replace with ttf-jetbrains-mono-nerd (in extra), or build (arch=any)	
+tzupdate	base		-	-			-	-	3.1.0-1	3.1.0-1	yes		missing (Omarchy-built package, no armv7h build)	optional: build ourselves (Rust)	
+udiskie	base		extra	2.7.0-2	2026-08-07	0.9	extra 2.7.0-2	extra 2.7.0-2	-	-	no	OK	fine	keep	
+ufw	base		extra	0.36.2-7	2026-01-13	0.5	extra 0.36.2-7	extra 0.36.2-7	-	-	no	OK	fine	keep	
+ufw-docker	base		-	-			-	-	251123-1	251123-1	yes		missing (Omarchy-built package, no armv7h build)	drop with docker	
+unzip	base		extra	6.0-23	2025-07-25	0.3	extra 6.0-23	extra 6.0-23	-	-	no	OK	fine	keep	
+usage	base		extra	6.12.1-1	2026-10-10	8.8	extra 6.12.1-1	extra 6.12.1-1	-	-	no	OK	fine	keep	
+uwsm	base		extra	0.27.0-1	2026-09-15	0.3	extra 0.27.0-1	extra 0.27.0-1	-	-	no	OK	fine	keep	
+whois	base		extra	5.6.6-1	2026-02-17	0.2	extra 5.6.6-1	extra 5.6.6-1	-	-	no	OK	fine	keep	
+wireless-regdb	base		core	2026.09.03-1	2026-09-09	0.0	core 2026.09.03-1	core 2026.09.03-1	-	-	no	OK	fine	keep	
+wireplumber	base		extra	0.5.13-1	2026-01-01	1.0	extra 0.5.18-1	extra 0.5.18-1	-	-	no	OK	fine	keep	
+wl-clipboard	base		extra	1:2.3.0-1	2026-03-23	0.1	extra 1:2.3.0-1	extra 1:2.3.0-1	-	-	no	OK	fine	keep	
+wtype	base		extra	0.4-2	2024-07-13	0.0	extra 0.4-2	extra 0.4-2	-	-	no	OK	fine	keep	
+woff2-font-awesome	base		extra	7.3.1-1	2026-07-15	0.3	extra 7.3.1-1	extra 7.3.1-1	-	-	no	OK	fine	keep	
+xdg-desktop-portal-gtk	base		extra	1.15.3-1	2025-03-24	0.5	extra 1.15.3-1	extra 1.15.3-1	-	-	no	OK	fine	keep	
+xdg-desktop-portal-hyprland	base		extra	1.4.1-2	2026-09-04	0.8	extra 1.4.1-2	extra 1.4.1-2	-	-	no	OK	fine	keep	
+xdg-terminal-exec	base		extra	0.14.3-2	2026-09-18	0.0	extra 0.14.3-2	extra 0.14.3-2	0.14.3-1	0.14.3-1	no	OK	fine	keep	
+xournalpp	base		extra	1.2.7-1	2025-05-09	6.6	extra 1.3.8-1	extra 1.3.8-1	-	-	no	OK	older	keep	
+yaru-icon-theme	base		-	-			-	-	26.04.5.1ubuntu-1	26.04.5.1ubuntu-1	yes		missing (Omarchy-built package, no armv7h build)	build ourselves (arch=any)	
+yay	base		-	-			-	-	13.0.1-1	13.0.1-1	yes		missing (Omarchy-built package, no armv7h build)	build ourselves (Go; the AUR PKGBUILD lists armv7h) or drop	
+yt-dlp	base		extra	2025.12.08-2	2026-01-12	32.7	extra 2026.08.19-1	extra 2025.12.08-2	-	-	no	OK	older	keep	
+zbar	base		extra	0.23.93-7	2026-07-13	0.7	extra 0.23.95-1	extra 0.23.93-7	-	-	no	OK	fine	keep	
+zoxide	base		extra	0.10.0-1	2026-07-05	1.0	extra 0.10.0-1	extra 0.10.0-1	-	-	no	OK	fine	keep	
+omarchy-keyring	omarchy-dep		-	-			-	-	20251027-1	20251027-1	yes		missing (Omarchy-built package, no armv7h build)	build ourselves (arch=any)	
+omarchy-settings	omarchy-dep	=4.0.4	-	-			-	-	4.0.4-1	4.0.4-6	yes		missing (Omarchy-built package, no armv7h build)	build ourselves (Omarchy PKGBUILD, add armv7h)	omarchy PKGBUILD depends
+pipewire	omarchy-dep		extra	1:1.6.9-1	2026-09-23	1.2	extra 1:1.6.9-1	extra 1:1.6.9-1	-	-	no	OK	fine	keep	
+perl	omarchy-dep		core	5.42.3-1	2026-10-12	53.7	core 5.42.3-1	core 5.42.3-1	-	-	no	OK	fine	keep	
+omarchy	omarchy-dep		-	-			-	-	4.0.4-1	4.0.4-2	yes		missing (Omarchy-built package, no armv7h build)	build ourselves (Omarchy PKGBUILD, add armv7h)	
+bash	omarchy-settings-dep		core	5.3.20-1	2026-09-20	9.2	core 5.3.20-1	core 5.3.20-1	-	-	no	OK	fine	keep	
+curl	omarchy-settings-dep		core	8.22.0-1	2026-09-03	2.1	core 8.22.0-1	core 8.22.0-1	-	-	no	OK	fine	keep	
+hicolor-icon-theme	omarchy-settings-dep		extra	0.18-1	2024-05-24	0.1	extra 0.18-1	extra 0.18-1	-	-	no	OK	fine	keep	
+cpptrace	quickshell-dep		extra	1.0.4-2	2026-05-11	0.5	extra 1.0.4-2	extra 1.0.4-2	-	-	no	OK	fine	keep	
+glibc	quickshell-dep		core	2.43+r22+g8362e8ce10b2-2	2026-05-03	40.6	core 2.44+r50+g1848099f063e-1	core 2.43+r22+g8362e8ce10b2-2	-	-	no	OK	older	keep	
+jemalloc	quickshell-dep		extra	1:5.4.0-1	2026-09-18	0.9	extra 1:5.4.0-1	extra 1:5.4.0-1	-	-	no	OK	fine	keep	
+libdrm	quickshell-dep		extra	2.4.134-1	2026-06-03	1.5	extra 2.4.134-1	extra 2.4.134-1	-	-	no	OK	fine	keep	
+libglvnd	quickshell-dep		extra	1.7.0-3	2025-06-14	4.6	extra 1.7.0-3	extra 1.7.0-3	-	-	no	OK	fine	keep	
+libpipewire	quickshell-dep		extra	1:1.6.9-1	2026-09-23	5.8	extra 1:1.6.9-1	extra 1:1.6.9-1	-	-	no	OK	fine	keep	
+libxcb	quickshell-dep		extra	1.17.0-1	2024-04-15	3.6	extra 1.17.0-1	extra 1.17.0-1	-	-	no	OK	fine	keep	
+mesa	quickshell-dep		extra	1:26.2.4-1	2026-10-03	59.8	extra 1:26.2.4-1	extra 1:26.2.4-1	-	-	no	OK	fine	keep	
+pam	quickshell-dep		core	1.7.3-1	2026-09-30	2.6	core 1.7.3-1	core 1.7.3-1	-	-	no	OK	fine	keep	
+polkit	quickshell-dep		extra	127-3	2026-01-01	1.9	extra 127-3	extra 127-3	-	-	no	OK	fine	keep	
+qt6-base	quickshell-dep		extra	6.12.0-2	2026-10-07	65.2	extra 6.12.0-2	extra 6.12.0-2	-	-	no	OK	fine	keep	
+qt6-declarative	quickshell-dep		extra	6.12.0-1	2026-10-07	112.7	extra 6.12.0-1	extra 6.12.0-1	-	-	no	OK	fine	keep	
+qt6-svg	quickshell-dep		extra	6.12.0-1	2026-10-07	0.9	extra 6.12.0-1	extra 6.12.0-1	-	-	no	OK	fine	keep	
+qt6-wayland	quickshell-dep		extra	6.12.0-1	2026-10-07	4.9	extra 6.12.0-1	extra 6.12.0-1	-	-	no	OK	fine	keep	
+wayland	quickshell-dep		extra	1.26.0-1	2026-08-09	0.8	extra 1.26.0-1	extra 1.26.0-1	-	-	no	OK	fine	keep	
+autoconf-archive	other(ISO cache)		extra	1:2024.10.16-4	2026-01-10	2.3	extra 1:2024.10.16-4	extra 1:2024.10.16-4	-	-	no	OK	fine	keep	
+asusctl	other(ISO cache)		-	-			extra 6.5.0-1	extra 6.5.0-1	6.4.0-1	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+base	other(ISO cache)		core	3-3	2026-02-07	0.0	core 3-3	core 3-3	-	-	no	OK	fine	keep	
+base-devel	other(ISO cache)		core	1-2	2024-09-07	0.0	core 1-2	core 1-2	-	-	no	OK	fine	keep	
+broadcom-wl-dkms	other(ISO cache)		-	-			extra 6.30.223.271-50	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+btrfs-progs	other(ISO cache)		core	7.1-1	2026-07-15	5.7	core 7.1-1	core 7.1-1	-	-	no	OK	fine	drop (not for this hardware)	
+dkms	other(ISO cache)		extra	3.4.4-1	2026-10-07	0.2	extra 3.4.4-1	extra 3.4.4-1	-	-	no	OK	fine	drop (not for this hardware)	
+egl-wayland	other(ISO cache)		extra	4:1.1.24-1	2026-10-07	0.1	extra 4:1.1.24-1	extra 4:1.1.24-1	-	-	no	OK	fine	drop (not for this hardware)	
+gst-plugin-pipewire	other(ISO cache)		extra	1:1.6.9-1	2026-09-23	0.2	extra 1:1.6.9-1	extra 1:1.6.9-1	-	-	no	OK	fine	keep	
+gtk4-layer-shell	other(ISO cache)		extra	1.3.0-1	2025-11-01	0.3	extra 1.3.0-1	extra 1.3.0-1	-	-	no	OK	fine	keep	
+libpulse	other(ISO cache)		extra	17.0+r98+gb096704c0-1	2025-12-19	1.4	extra 17.0+r98+gb096704c0-1	extra 17.0+r98+gb096704c0-1	-	-	no	OK	fine	keep	
+intel-ipu7-camera	other(ISO cache)		-	-			-	-	1.0.6-2	-	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+intel-lpmd	other(ISO cache)		-	-			extra 0.1.0-4	-	0.1.0-2	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+intel-media-driver	other(ISO cache)		-	-			extra 26.3.5-1	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+libva-intel-driver	other(ISO cache)		-	-			extra 2.4.5-1	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+libva-nvidia-driver	other(ISO cache)		extra	0.0.18-1	2026-09-06	0.1	extra 0.0.18-1	extra 0.0.18-1	-	-	no	OK	fine	drop (not for this hardware)	
+limine	other(ISO cache)		extra	12.9.3-1	2026-10-06	5.2	extra 12.9.3-1	extra 12.9.3-1	-	-	no	OK	fine	drop (not for this hardware)	
+limine-mkinitcpio-hook	other(ISO cache)		-	-			-	-	1.38.0-1.1	1.40.0-2	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+limine-snapper-sync	other(ISO cache)		-	-			-	-	1.31.0-1.1	1.32.1-2	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+linux-firmware	other(ISO cache)		core	20260916-1	2026-09-17	0.0	core 20260916-1	core 20260916-1	-	-	no	OK	fine	keep	
+linux-omarchy	other(ISO cache)		-	-			-	-	7.2.5-3	-	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+linux-omarchy-headers	other(ISO cache)		-	-			-	-	7.2.5-3	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+macbook12-spi-driver-dkms	other(ISO cache)		-	-			-	-	0+git.315-1	-	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+nvidia-580xx-dkms	other(ISO cache)		-	-			-	-	580.178.04-1.1	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+nvidia-dkms	other(ISO cache)		-	-			extra 615.78.08-1	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+nvidia-open-dkms	other(ISO cache)		-	-			extra 615.78.08-1	extra 615.78.08-1	-	615.71.09-1.2	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+nvidia-580xx-utils	other(ISO cache)		-	-			-	-	580.178.04-1.1	-	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+nvidia-utils	other(ISO cache)		-	-			extra 615.78.08-1	extra 615.78.08-1	-	615.71.09-1.1	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+lib32-nvidia-580xx-utils	other(ISO cache)		-	-			-	-	580.178.04-1.1	-	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+lib32-nvidia-utils	other(ISO cache)		-	-			-	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+pipewire-alsa	other(ISO cache)		extra	1:1.6.9-1	2026-09-23	0.0	extra 1:1.6.9-1	extra 1:1.6.9-1	-	-	no	OK	fine	keep	
+pipewire-jack	other(ISO cache)		extra	1:1.6.9-1	2026-09-23	0.7	extra 1:1.6.9-1	extra 1:1.6.9-1	-	-	no	OK	fine	keep	
+pipewire-pulse	other(ISO cache)		extra	1:1.6.9-1	2026-09-23	0.6	extra 1:1.6.9-1	extra 1:1.6.9-1	-	-	no	OK	fine	keep	
+snapper	other(ISO cache)		extra	0.13.2-1	2026-09-16	4.1	extra 0.13.2-1	extra 0.13.2-1	-	-	no	OK	fine	drop (not for this hardware)	
+sof-firmware	other(ISO cache)		extra	2026.09.2-1	2026-10-07	55.1	extra 2026.09.2-1	extra 2026.09.2-1	-	-	no	OK	fine	drop (not for this hardware)	
+thermald	other(ISO cache)		-	-			extra 2:2.5.13-1	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+webp-pixbuf-loader	other(ISO cache)		extra	0.2.7-2	2026-04-09	0.0	extra 0.2.7-2	extra 0.2.7-2	-	-	no	OK	fine	keep	
+yay-debug	other(ISO cache)		-	-			-	-	13.0.1-1	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+tuxedo-drivers-nocompatcheck-dkms	other(ISO cache)		-	-			-	-	4.22.1-1	-	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+yt6801-dkms	other(ISO cache)		-	-			-	-	1.0.31-2	-	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+zram-generator	other(ISO cache)		extra	1.2.1-1	2024-12-09	0.6	extra 1.2.1-1	extra 1.2.1-1	-	-	no	OK	fine	keep	
+libvpl	other(ISO cache)		extra	2.17.0-1	2026-06-27	0.9	extra 2.17.0-1	extra 2.17.0-1	-	-	no	OK	fine	drop (not for this hardware)	
+vpl-gpu-rt	other(ISO cache)		-	-			extra 26.3.5-1	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+vulkan-intel	other(ISO cache)		extra	1:26.2.4-1	2026-10-03	41.6	extra 1:26.2.4-1	extra 1:26.2.4-1	-	-	no	OK	fine	drop (not for this hardware)	
+vulkan-radeon	other(ISO cache)		extra	1:26.2.4-1	2026-10-03	17.0	extra 1:26.2.4-1	extra 1:26.2.4-1	-	-	no	OK	fine	drop (not for this hardware)	
+vulkan-asahi	other(ISO cache)		extra	1:26.2.4-1	2026-10-03	13.4	extra 1:26.2.4-1	extra 1:26.2.4-1	-	-	no	OK	fine	drop (not for this hardware)	
+linux-firmware-marvell	other(ISO cache)		core	20260916-1	2026-09-17	83.9	core 20260916-1	core 20260916-1	-	-	no	OK	fine	drop (not for this hardware)	
+dell-xps-touchpad-haptics	other(ISO cache)		-	-			-	-	1.0.0-3	-	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+lsp-plugins-lv2	other(ISO cache)		extra	1.2.35-1	2026-08-30	32.0	extra 1.2.35-1	extra 1.2.35-1	-	-	no	OK	fine	keep	
+apple-bcm-firmware	other(ISO cache)		-	-			-	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+apple-t2-audio-config	other(ISO cache)		-	-			-	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+linux-t2	other(ISO cache)		-	-			-	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+linux-t2-headers	other(ISO cache)		-	-			-	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+t2fanrd	other(ISO cache)		-	-			-	-	-	-	no		n/a (x86 or other hardware)	drop (not for this hardware)	
+qmk-hid	other(ISO cache)		-	-			-	-	0.1.13-1	0.1.13-1	yes		n/a (x86 or other hardware)	drop (not for this hardware)	
+firefox	frame-extra		extra	157.0-1	2026-09-30	271.8	extra 157.0.1-1	extra 157.0.1-1	-	-	no	OK	fine	keep	
+neovim	frame-extra	>=0.9.0	extra	0.9.1-1	2023-06-04	24.0	extra 0.12.6-1	extra 0.12.6-1	-	-	no	FAIL	too-old+broken	build neovim >= 0.11.2 ourselves, or drop omarchy-nvim and use helix/vim/micro	omarchy-nvim PKGBUILD depends (LazyVim itself needs more, see smoke-test.md); built 2023-06-04; depends on libtermkey, which no armv7h repo has; LazyVim main needs Neovim >= 0.11.2
+wvkbd	frame-extra		-	-			-	-	-	-	no		missing (not in any repo read; AUR or source only)	build ourselves (C, AUR lists armv7h); or use squeekboard from extra	
+hyprgrass	frame-extra		-	-			-	-	-	-	no		missing (not in any repo read; AUR or source only)	build ourselves against the exact hyprland package	
+squeekboard	frame-extra		extra	1.43.1-6	2026-10-08	5.1	extra 1.43.1-6	extra 1.43.1-6	-	-	no	OK	fine	candidate on-screen keyboard (in extra)	research/04 said aarch64 only; it is in armv7h extra
+kmscube	frame-extra		-	-			-	-	-	-	no		missing (not in any repo read; AUR or source only)	build ourselves (GPU test tool), or use mesa-utils/glmark2 from extra	
+aquamarine	frame-extra		extra	0.15.1-1	2026-09-17	1.4	extra 0.15.1-1	extra 0.15.1-1	-	0.15.1-1.1	yes	OK	fine	keep	
+hyprlock	frame-extra		extra	0.9.6-3	2026-09-04	1.0	extra 0.9.6-3	extra 0.9.6-3	-	-	no	OK	fine	keep	research/04 found no armv7h page; it is in armv7h extra (Omarchy 4 does not use it)
+hypridle	frame-extra		extra	0.1.8-2	2026-09-04	0.3	extra 0.1.8-2	extra 0.1.8-2	-	-	no	OK	fine	keep	research/04 found no armv7h page; it is in armv7h extra (Omarchy 4 does not use it)
+qt6-5compat	frame-extra		extra	6.12.0-1	2026-10-08	2.3	extra 6.12.0-1	extra 6.12.0-1	-	-	no	OK	fine	keep	
+qt6-multimedia	frame-extra		extra	6.12.0-1	2026-10-08	6.1	extra 6.12.0-1	extra 6.12.0-1	-	-	no	OK	fine	keep	
+cage	frame-extra		extra	0.3.1-1	2026-07-06	0.0	extra 0.3.1-1	extra 0.3.1-1	-	-	no	OK	fine	keep	
+weston	frame-extra		extra	15.0.1-3	2026-06-10	5.4	extra 15.0.1-3	extra 15.0.1-3	-	-	no	OK	fine	keep	
+wayvnc	frame-extra		extra	0.10.2-1	2026-10-02	0.2	extra 0.10.2-1	extra 0.10.2-1	-	-	no	OK	fine	keep	

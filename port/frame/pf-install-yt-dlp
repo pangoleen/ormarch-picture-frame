@@ -1,0 +1,16 @@
+#!/bin/bash
+# Install the YouTube extractor separately from Arch Linux ARM's older yt-dlp
+# package.  This stays in the frame user's home directory and never replaces a
+# system package.
+set -euo pipefail
+
+version=2026.8.19
+venv="$HOME/.local/yt-dlp-venv"
+
+if [[ -x "$venv/bin/yt-dlp" ]] && [[ $("$venv/bin/yt-dlp" --version) == "$version" ]]; then
+  exit 0
+fi
+
+python3 -m venv "$venv"
+"$venv/bin/python" -m pip install --disable-pip-version-check --no-input --upgrade "yt-dlp==$version"
+[[ $("$venv/bin/yt-dlp" --version) == "$version" ]]

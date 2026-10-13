@@ -1,0 +1,12 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L debug variant: UART0 on the SD-slot pins PF2 (TX) / PF4 (RX),
+ * 115200n8, through a MicroSD breakout. The SD card slot is OFF.
+ * Use it only when the frame boots over FEL (USB), not from the SD card.
+ * [fex] [uart_para] uart_debug_port = 0, uart_debug_tx = PF02,
+ *       uart_debug_rx = PF04.
+ *
+ * DRAFT. Not tested on hardware.
+ */
+#define PF1007L_UART0_ON_SD_PINS
+#include "sun8i-a33-pf1007l.dts"

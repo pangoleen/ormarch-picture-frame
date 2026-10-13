@@ -1,0 +1,64 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L build "L": U-Boot that boots Linux from the MicroSD card.
+ *
+ * Base: the backup build (Q8 A33 reference + USB peripheral mode, no VBUS
+ * drive). Changes for build L:
+ *  - eMMC (MMC2) disabled: this U-Boot has no device for the internal
+ *    storage. Android stays untouched (project safety rule 3).
+ *  - SDIO Wi-Fi (MMC1) disabled: U-Boot must not touch the Wi-Fi power pins.
+ *    On this unit PL2 = chip_en, PL6 = wl_reg_on (dumps/sys_config.fex).
+ *  - R_UART (PL2/PL3) disabled: PL2 is the Wi-Fi chip_en output on this unit.
+ *  - Console = UART0 with NO pins. The UART runs, the text goes nowhere.
+ *    No pad of the SoC is switched to a UART function.
+ *  - Display nodes disabled: the panel is MIPI-DSI, U-Boot cannot use it.
+ */
+
+#include "sun8i-a33-pf1007l-backup.dts"
+
+/ {
+	model = "PF1007L Linux boot (build L)";
+
+	aliases {
+		serial0 = &uart0;
+	};
+
+	chosen {
+		stdout-path = "serial0:115200n8";
+	};
+};
+
+&uart0 {
+	/* No pinctrl on purpose. See arch/arm/mach-sunxi/board.c,
+	 * CONFIG_SUNXI_CONSOLE_NO_PINMUX. */
+	status = "okay";
+};
+
+&r_uart {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+	status = "disabled";
+};
+
+&mmc1 {
+	/delete-property/ mmc-pwrseq;
+	status = "disabled";
+};
+
+&mmc2 {
+	status = "disabled";
+};
+
+&de {
+	status = "disabled";
+};
+
+&tcon0 {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+	status = "disabled";
+};
+
+&ehci0 {
+	status = "disabled";
+};

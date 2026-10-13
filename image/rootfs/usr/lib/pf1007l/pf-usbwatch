@@ -1,0 +1,28 @@
+#!/bin/sh
+# Watches the state of the USB device controller. Writes a stage marker at each
+# change. When the host (the Mac) has configured the gadget, it confirms this
+# start to U-Boot (pf/linux-ok.env). U-Boot then starts Linux again next time.
+# Without the confirmation, the next start is "USB disk mode".
+. /usr/lib/pf1007l/pf-lib.sh
+last=""; confirmed=0; noudc=0; t=0
+while :; do
+	state=""
+	for u in /sys/class/udc/*; do
+		[ -r "$u/state" ] || continue
+		[ "$state" = configured ] || state=$(cat "$u/state")
+	done
+	if [ -z "$state" ]; then
+		noudc=$((noudc + 1))
+		[ "$noudc" -eq 20 ] && pf_stage 70-usb-no-udc "no USB device controller after 20 s"
+	elif [ "$state" != "$last" ]; then
+		pf_stage "70-usb-$(echo "$state" | tr ' ' '-')"
+		last=$state
+	fi
+	if [ "$confirmed" = 0 ] && [ "$state" = configured ] && pf_confirm; then
+		confirmed=1
+		pf_stage 71-usb-confirmed "the host configured the gadget; start $(pf_bootnum) is confirmed"
+	fi
+	# Lines that were made before /boot was mounted: write them now.
+	[ -s "$PF_RUN/pending.log" ] && pf_fat_ok && pf_stage 45-boot-partition-mounted
+	sleep 1
+done

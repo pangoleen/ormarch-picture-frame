@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L - second bring-up step.  (extlinux label "pmic")
+ *
+ * = the board draft (kernel/dts/sun8i-a33-pf1007l.dts) with the display,
+ * backlight, touch, Wi-Fi, GPU and PWM switched off. What it adds to "min":
+ * the AXP223 PMIC on RSB and all its regulators, I2C0/I2C1, the LRADC keys,
+ * the SD card-detect pin.
+ *
+ * The USB PHY keeps the "VBUS is present" fallback (as in "min"): the link to
+ * the Mac must not depend on the PMIC's VBUS detection in this step.
+ */
+
+#include "sun8i-a33-pf1007l.dts"
+
+/ {
+	model = "Humblestead HM-PF1007-BK (EFERCRO PF1007L), PMIC step";
+};
+
+&de { status = "disabled"; };
+&tcon0 { status = "disabled"; };
+&dphy { status = "disabled"; };
+&dsi { status = "disabled"; };
+&backlight { status = "disabled"; };
+&pwm { status = "disabled"; };
+&mali { status = "disabled"; };
+&touchscreen { status = "disabled"; };
+&mmc1 { status = "disabled"; };
+
+&usbphy {
+	/delete-property/ usb0_vbus_power-supply;
+};

@@ -1,0 +1,1 @@
+root=/dev/mmcblk0p2 rw rootwait console=ttyGS0,115200 console=tty0 psi=1 cpufreq.default_governor=schedutil ignore_loglevel log_buf_len=1M modprobe.blacklist=sun4i_drm,sun4i_tcon,sun4i_backend,sun4i_frontend,sun6i_drc,sun6i_mipi_dsi,sun8i_tcon_top,panel_jadard_jd9365da_h3,lima,aic8800_bsp,aic8800_fdrv,aic8800_btlpm

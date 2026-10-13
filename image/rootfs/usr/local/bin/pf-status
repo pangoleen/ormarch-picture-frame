@@ -1,0 +1,12 @@
+#!/bin/sh
+# pf-status          show the status report on the terminal
+# pf-status save     also copy logs to the SD card (FAT): /boot/pf/last/
+if [ "${1:-}" = save ]; then exec sudo /usr/lib/pf1007l/pf-collect manual; fi
+. /usr/lib/pf1007l/pf-lib.sh
+echo "start counter (hex): $(pf_bootnum)   uptime: $(pf_uptime) s"
+echo "device tree: $(tr -d '\0' < /proc/device-tree/model 2>/dev/null)"
+/usr/lib/pf1007l/pf-gadget status
+ip -br addr
+echo "failed units: $(systemctl --failed --no-legend --no-pager | wc -l)"
+echo "first boot pending: $([ -e /var/lib/pf1007l/firstboot-pending ] && echo yes || echo no)"
+echo "stage markers (this start):"; ls /boot/pf/stage 2>/dev/null | tr '\n' ' '; echo

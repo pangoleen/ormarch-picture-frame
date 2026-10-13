@@ -1,0 +1,2 @@
+# The user "frame" has no password (SSH key and USB console only).
+frame ALL=(ALL:ALL) NOPASSWD: ALL

@@ -1,0 +1,15 @@
+# /etc/systemd/system/pf1007l-bootlog.service - enable with:
+#   systemctl enable pf1007l-bootlog.service serial-getty@ttyGS0.service systemd-networkd.service
+# DRAFT: not run on the frame.
+[Unit]
+Description=PF1007L: copy the kernel log to the boot partition (blind bring-up)
+DefaultDependencies=no
+After=local-fs.target
+RequiresMountsFor=/boot
+
+[Service]
+Type=simple
+ExecStart=/usr/local/sbin/pf1007l-bootlog
+
+[Install]
+WantedBy=sysinit.target

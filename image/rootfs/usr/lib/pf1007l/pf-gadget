@@ -1,0 +1,112 @@
+#!/bin/sh
+# pf-gadget up [wait-seconds] | down | status
+#
+# USB composite gadget through configfs: CDC-ACM serial + CDC-NCM (or ECM) network.
+# The Mac needs no driver: it shows /dev/cu.usbmodem* and a new network interface.
+# POSIX sh: the same file runs in the initramfs (busybox) and in the real system.
+#
+# Settings: <FAT>/pf/gadget.conf (plain text, edit it on the Mac). Defaults below.
+#
+# Kernel console: u_serial registers a console for port 0 (ttyGS0) by itself. The
+# kernel uses it only when "console=ttyGS0" is on the kernel command line.
+
+PF_BOOT=${PF_BOOT:-/boot}
+CFS=/sys/kernel/config
+G=$CFS/usb_gadget/pf1007l
+
+SERIAL=1            # 1 = ACM serial function (login console on the Mac)
+NET=ncm             # ncm | ecm | none
+MAXPOWER=2          # mA in the USB descriptor. 2 = the value of the U-Boot gadget that this Mac setup accepted.
+VID=0x1d6b          # Linux Foundation
+PID=0x0104          # Multifunction Composite Gadget
+SERIALNUMBER=PF1007L0001          # a fixed text, NOT the SoC serial (privacy)
+DEV_MAC=02:50:46:10:07:01         # frame side, locally administered
+HOST_MAC=02:50:46:10:07:02        # Mac side, locally administered
+[ -r "$PF_BOOT/pf/gadget.conf" ] && . "$PF_BOOT/pf/gadget.conf"
+
+say() { echo "pf-gadget: $*"; echo "pf-gadget: $*" > /dev/kmsg 2>/dev/null; }
+
+udc_name() { ls /sys/class/udc 2>/dev/null | head -n 1; }
+
+up() {
+	wait=${1:-0}
+	if [ -s "$G/UDC" ]; then say "already up on $(cat "$G/UDC")"; return 0; fi
+	[ -d "$CFS/usb_gadget" ] || mount -t configfs none "$CFS" 2>/dev/null
+	[ -d "$CFS/usb_gadget" ] || modprobe libcomposite 2>/dev/null
+	[ -d "$CFS/usb_gadget" ] || { say "no usb_gadget in configfs (libcomposite not loaded)"; return 3; }
+	i=0
+	while [ -z "$(udc_name)" ] && [ "$i" -lt "$wait" ]; do sleep 1; i=$((i + 1)); done
+	UDC=$(udc_name)
+	[ -n "$UDC" ] || { say "no USB device controller in /sys/class/udc after ${wait}s"; return 2; }
+
+	mkdir -p "$G" || return 3
+	echo "$VID" > "$G/idVendor"
+	echo "$PID" > "$G/idProduct"
+	echo 0x0100 > "$G/bcdDevice"
+	echo 0x0200 > "$G/bcdUSB"
+	# Composite device with interface association descriptors (IAD).
+	echo 0xEF > "$G/bDeviceClass"
+	echo 0x02 > "$G/bDeviceSubClass"
+	echo 0x01 > "$G/bDeviceProtocol"
+	mkdir -p "$G/strings/0x409"
+	echo "$SERIALNUMBER" > "$G/strings/0x409/serialnumber"
+	echo "omarchy-frame" > "$G/strings/0x409/manufacturer"
+	echo "PF1007L Linux" > "$G/strings/0x409/product"
+	mkdir -p "$G/configs/c.1/strings/0x409"
+	echo "serial + network" > "$G/configs/c.1/strings/0x409/configuration"
+	echo "$MAXPOWER" > "$G/configs/c.1/MaxPower"
+	echo 0x80 > "$G/configs/c.1/bmAttributes"
+
+	if [ "$SERIAL" = 1 ]; then
+		modprobe usb_f_acm 2>/dev/null
+		mkdir -p "$G/functions/acm.GS0" && ln -s "$G/functions/acm.GS0" "$G/configs/c.1/" 2>/dev/null \
+			|| say "ACM function failed"
+	fi
+	case "$NET" in
+	ncm|ecm)
+		modprobe "usb_f_$NET" 2>/dev/null
+		if mkdir -p "$G/functions/$NET.usb0"; then
+			echo "$DEV_MAC" > "$G/functions/$NET.usb0/dev_addr"
+			echo "$HOST_MAC" > "$G/functions/$NET.usb0/host_addr"
+			ln -s "$G/functions/$NET.usb0" "$G/configs/c.1/" 2>/dev/null
+		else
+			say "$NET function failed"
+		fi ;;
+	esac
+
+	if ! echo "$UDC" > "$G/UDC"; then say "bind to $UDC failed"; return 4; fi
+	say "up on $UDC: serial=$SERIAL net=$NET"
+	return 0
+}
+
+down() {
+	[ -d "$G" ] || return 0
+	# The serial function cannot be removed while a program has ttyGS0 open
+	# (the rmdir then waits for ever): stop the login console first.
+	command -v systemctl >/dev/null 2>&1 && systemctl stop serial-getty@ttyGS0.service 2>/dev/null
+	echo "" > "$G/UDC" 2>/dev/null
+	rm -f "$G"/configs/c.1/acm.GS0 "$G"/configs/c.1/ncm.usb0 "$G"/configs/c.1/ecm.usb0
+	rmdir "$G"/configs/c.1/strings/0x409 "$G"/configs/c.1 2>/dev/null
+	rmdir "$G"/functions/* "$G"/strings/0x409 "$G" 2>/dev/null
+	say "down"
+}
+
+status() {
+	echo "udc: $(udc_name)"
+	for u in /sys/class/udc/*; do
+		[ -e "$u/state" ] && echo "udc state: $(cat "$u/state")  speed: $(cat "$u/current_speed" 2>/dev/null)"
+	done
+	if [ -d "$G" ]; then
+		echo "gadget bound to: $(cat "$G/UDC" 2>/dev/null)"
+		echo "functions: $(ls "$G/configs/c.1" 2>/dev/null | grep -v -e strings -e MaxPower -e bmAttributes | tr '\n' ' ')"
+	else
+		echo "gadget: not configured"
+	fi
+}
+
+case "${1:-}" in
+up) up "${2:-0}" ;;
+down) down ;;
+status) status ;;
+*) echo "usage: pf-gadget up [wait-seconds] | down | status" >&2; exit 64 ;;
+esac

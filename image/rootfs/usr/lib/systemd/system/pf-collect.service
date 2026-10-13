@@ -1,0 +1,7 @@
+[Unit]
+Description=PF1007L log copy to the SD card (FAT)
+After=pf-late.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/pf1007l/pf-collect timer

@@ -1,0 +1,17 @@
+# Private or large build products. Nothing here goes to git.
+# - secrets/: SSH key pair of the frame user, SSH host key of the frame
+# - cache/:   downloads (Arch Linux ARM tarball, packages)
+# - work/:    intermediate build files
+# - out/:     the SD-card image (it holds vendor firmware blobs and the keys)
+/secrets/
+/cache/
+/work/
+/out/
+*.img
+*.img.*
+*.ko
+*.fw
+*.bin
+*.dtb
+*.scr
+.DS_Store

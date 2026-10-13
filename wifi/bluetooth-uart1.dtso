@@ -1,0 +1,20 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/* Test only. Apply to the currently working full DTB with fdtoverlay.
+ * fex [uart1] enables PG6/PG7 and PG8/PG9 at mux 2.
+ * The kernel pin groups below use that same mapping.
+ * Do not claim PL8/PL9/PL10 until the separate power test.
+ * No UART console. No eMMC changes. Revert by selecting the full label.
+ */
+/dts-v1/;
+/plugin/;
+
+&uart1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart1_pg_pins>, <&uart1_cts_rts_pg_pins>;
+	uart-has-rtscts;
+	status = "okay";
+};
+
+&{/aliases} {
+	serial1 = "/soc/serial@1c28400";
+};

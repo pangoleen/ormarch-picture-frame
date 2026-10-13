@@ -1,0 +1,5 @@
+#!/bin/sh
+# pf-stage <NN-name> [text...]   Write one boot-stage marker (see pf-lib.sh).
+. /usr/lib/pf1007l/pf-lib.sh
+[ $# -ge 1 ] || { echo "usage: pf-stage <NN-name> [text]" >&2; exit 64; }
+pf_stage "$@"

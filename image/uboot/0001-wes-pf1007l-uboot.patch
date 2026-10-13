@@ -1,0 +1,102 @@
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 7c8cf3a5..857c9a52 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -608,6 +608,7 @@ dtb-$(CONFIG_MACH_SUN8I_A33) += \
+ 	sun8i-a33-ippo-q8h-v1.2.dtb \
+ 	sun8i-a33-olinuxino.dtb \
+ 	sun8i-a33-q8-tablet.dtb \
++	sun8i-a33-pf1007l-backup.dtb \
+ 	sun8i-a33-sinlinx-sina33.dtb \
+ 	sun8i-r16-bananapi-m2m.dtb \
+ 	sun8i-r16-nintendo-nes-classic.dtb \
+diff --git a/arch/arm/dts/sun8i-a33-pf1007l-backup.dts b/arch/arm/dts/sun8i-a33-pf1007l-backup.dts
+new file mode 100644
+index 00000000..783593da
+--- /dev/null
++++ b/arch/arm/dts/sun8i-a33-pf1007l-backup.dts
+@@ -0,0 +1,32 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * PF1007L backup build: the Q8 A33 tablet reference design, plus
++ * - eMMC on MMC2, 8-bit (as the boot-access notes observed on this PCB)
++ * - USB OTG forced to peripheral so the computer stays the host
++ * - no VBUS drive: the frame is powered from the host's VBUS
++ */
++
++#include "sun8i-a33-q8-tablet.dts"
++
++/ {
++	model = "PF1007L backup (Q8 A33 base)";
++};
++
++&mmc2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&mmc2_8bit_pins>;
++	vmmc-supply = <&reg_dcdc1>;
++	bus-width = <8>;
++	non-removable;
++	cap-mmc-hw-reset;
++	status = "okay";
++};
++
++&usb_otg {
++	dr_mode = "peripheral";
++};
++
++&usbphy {
++	/delete-property/ usb0_vbus-supply;
++	/delete-property/ usb0_id_det-gpios;
++};
+diff --git a/cmd/usb_mass_storage.c b/cmd/usb_mass_storage.c
+index 47e8b70c..634a9263 100644
+--- a/cmd/usb_mass_storage.c
++++ b/cmd/usb_mass_storage.c
+@@ -31,10 +31,9 @@ static int ums_read_sector(struct ums *ums_dev,
+ static int ums_write_sector(struct ums *ums_dev,
+ 			    ulong start, lbaint_t blkcnt, const void *buf)
+ {
+-	struct blk_desc *block_dev = &ums_dev->block_dev;
+-	lbaint_t blkstart = start + ums_dev->start_sector;
+-
+-	return blk_dwrite(block_dev, blkstart, blkcnt, buf);
++	/* PF1007L backup build: never write to storage. */
++	printf("ums: refused write of " LBAF " blocks at " LBAF "\n", blkcnt, start);
++	return 0;
+ }
+ 
+ static struct ums *ums;
+diff --git a/configs/pf1007l_backup_defconfig b/configs/pf1007l_backup_defconfig
+new file mode 100644
+index 00000000..4360358b
+--- /dev/null
++++ b/configs/pf1007l_backup_defconfig
+@@ -0,0 +1,15 @@
++CONFIG_ARM=y
++CONFIG_ARCH_SUNXI=y
++CONFIG_DEFAULT_DEVICE_TREE="sun8i-a33-pf1007l-backup"
++CONFIG_SPL=y
++CONFIG_MACH_SUN8I_A33=y
++CONFIG_DRAM_CLK=456
++CONFIG_DRAM_ZQ=15291
++CONFIG_MMC_SUNXI_SLOT_EXTRA=2
++# CONFIG_VIDEO_SUNXI is not set
++# CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
++CONFIG_CONS_INDEX=5
++CONFIG_BOOTDELAY=-2
++CONFIG_USB_MUSB_GADGET=y
++CONFIG_CMD_USB_MASS_STORAGE=y
++CONFIG_CRC32_VERIFY=y
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 71dc58da..d76ab970 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2488,6 +2488,8 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+ 
+ 	for (i = 0; i < nluns; i++) {
+ 		common->luns[i].removable = 1;
++		/* PF1007L backup build: report write-protect to the host. */
++		common->luns[i].initially_ro = 1;
+ 
+ 		rc = fsg_lun_open(&common->luns[i], ums[i].num_sectors, ums->block_dev.blksz, "");
+ 		if (rc)

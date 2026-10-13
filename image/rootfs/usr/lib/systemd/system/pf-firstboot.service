@@ -1,0 +1,13 @@
+[Unit]
+Description=PF1007L first boot: clock check, grow the root file system, pacman keyring
+After=local-fs.target systemd-remount-fs.service pf-basic.service
+ConditionPathExists=/var/lib/pf1007l/firstboot-pending
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/pf1007l/pf-firstboot
+TimeoutStartSec=30min
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

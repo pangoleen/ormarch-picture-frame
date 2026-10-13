@@ -1,0 +1,11 @@
+[Unit]
+Description=PF1007L touch keyboard
+
+[Service]
+Type=dbus
+BusName=sm.puri.OSK0
+ExecStart=/usr/bin/squeekboard
+Environment=LANG=C.UTF-8
+UnsetEnvironment=MESA_GLES_VERSION_OVERRIDE
+Restart=on-failure
+RestartSec=2

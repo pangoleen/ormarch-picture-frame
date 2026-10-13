@@ -1,0 +1,25 @@
+# Test session on the VM's first virtual terminal: a real logind session on seat0, as a display manager makes.
+# The command and its environment come from /run/vt-session/{cmd,env} (written by /usr/local/bin/session).
+[Unit]
+Description=Test graphical session on tty1
+After=systemd-user-sessions.service systemd-logind.service
+Conflicts=getty@tty1.service
+
+[Service]
+User=frame
+WorkingDirectory=/home/frame
+PAMName=login
+TTYPath=/dev/tty1
+TTYReset=yes
+TTYVHangup=yes
+TTYVTDisallocate=yes
+StandardInput=tty-fail
+StandardOutput=append:/var/log/vt-session.log
+StandardError=inherit
+UtmpIdentifier=tty1
+UtmpMode=user
+Environment=XDG_SESSION_TYPE=wayland XDG_SEAT=seat0 XDG_VTNR=1
+EnvironmentFile=-/run/vt-session/env
+ExecStart=/bin/bash -lc 'exec bash /run/vt-session/cmd'
+KillMode=control-group
+TimeoutStopSec=30

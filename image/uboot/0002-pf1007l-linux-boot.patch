@@ -1,0 +1,278 @@
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 857c9a5..98a2449 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -609,6 +609,7 @@ dtb-$(CONFIG_MACH_SUN8I_A33) += \
+ 	sun8i-a33-olinuxino.dtb \
+ 	sun8i-a33-q8-tablet.dtb \
+ 	sun8i-a33-pf1007l-backup.dtb \
++	sun8i-a33-pf1007l-linux.dtb \
+ 	sun8i-a33-sinlinx-sina33.dtb \
+ 	sun8i-r16-bananapi-m2m.dtb \
+ 	sun8i-r16-nintendo-nes-classic.dtb \
+diff --git a/arch/arm/dts/sun8i-a33-pf1007l-linux.dts b/arch/arm/dts/sun8i-a33-pf1007l-linux.dts
+new file mode 100644
+index 0000000..0dd7c91
+--- /dev/null
++++ b/arch/arm/dts/sun8i-a33-pf1007l-linux.dts
+@@ -0,0 +1,64 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * PF1007L build "L": U-Boot that boots Linux from the MicroSD card.
++ *
++ * Base: the backup build (Q8 A33 reference + USB peripheral mode, no VBUS
++ * drive). Changes for build L:
++ *  - eMMC (MMC2) disabled: this U-Boot has no device for the internal
++ *    storage. Android stays untouched (project safety rule 3).
++ *  - SDIO Wi-Fi (MMC1) disabled: U-Boot must not touch the Wi-Fi power pins.
++ *    On this unit PL2 = chip_en, PL6 = wl_reg_on (dumps/sys_config.fex).
++ *  - R_UART (PL2/PL3) disabled: PL2 is the Wi-Fi chip_en output on this unit.
++ *  - Console = UART0 with NO pins. The UART runs, the text goes nowhere.
++ *    No pad of the SoC is switched to a UART function.
++ *  - Display nodes disabled: the panel is MIPI-DSI, U-Boot cannot use it.
++ */
++
++#include "sun8i-a33-pf1007l-backup.dts"
++
++/ {
++	model = "PF1007L Linux boot (build L)";
++
++	aliases {
++		serial0 = &uart0;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++};
++
++&uart0 {
++	/* No pinctrl on purpose. See arch/arm/mach-sunxi/board.c,
++	 * CONFIG_SUNXI_CONSOLE_NO_PINMUX. */
++	status = "okay";
++};
++
++&r_uart {
++	/delete-property/ pinctrl-names;
++	/delete-property/ pinctrl-0;
++	status = "disabled";
++};
++
++&mmc1 {
++	/delete-property/ mmc-pwrseq;
++	status = "disabled";
++};
++
++&mmc2 {
++	status = "disabled";
++};
++
++&de {
++	status = "disabled";
++};
++
++&tcon0 {
++	/delete-property/ pinctrl-names;
++	/delete-property/ pinctrl-0;
++	status = "disabled";
++};
++
++&ehci0 {
++	status = "disabled";
++};
+diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
+index b04ec67..c3e91ec 100644
+--- a/arch/arm/mach-sunxi/Kconfig
++++ b/arch/arm/mach-sunxi/Kconfig
+@@ -887,6 +887,22 @@ config SUNXI_MINIMUM_DRAM_MB
+ 	the default payload addresses must be shifted down.
+ 	This is expected to be fixed by the SoC selection.
+ 
++config SUNXI_CONSOLE_NO_PINMUX
++	bool "Do not set a pin mux for the console UART"
++	select SYS_CONSOLE_IS_IN_ENV
++	select SYS_DEVICE_NULLDEV
++	---help---
++	The SPL normally switches two pins to the console UART selected by
++	CONFIG_CONS_INDEX. With this option it leaves every pin as it is.
++	The UART still runs, but its output reaches no pin. Use this on a
++	board where each possible console pin has another function (PF1007L:
++	PL2 = Wi-Fi chip enable, PB0/PB1 = keys, PG6/PG7 = Bluetooth UART,
++	PF2/PF4 = SD card). The device tree must not give the console UART a
++	pinctrl property either.
++	With no pins there is no console input: the default environment sets
++	stdin=nulldev, so that nothing on a UART can stop autoboot, a script
++	or the ums command.
++
+ config UART0_PORT_F
+ 	bool "UART0 on MicroSD breakout board"
+ 	---help---
+diff --git a/arch/arm/mach-sunxi/board.c b/arch/arm/mach-sunxi/board.c
+index 432b1c1..20c3b0e 100644
+--- a/arch/arm/mach-sunxi/board.c
++++ b/arch/arm/mach-sunxi/board.c
+@@ -81,7 +81,9 @@ phys_addr_t board_get_usable_ram_top(phys_size_t total_size)
+ static int gpio_init(void)
+ {
+ 	__maybe_unused uint val;
+-#if CONFIG_CONS_INDEX == 1 && defined(CONFIG_UART0_PORT_F)
++#if defined(CONFIG_SUNXI_CONSOLE_NO_PINMUX)
++	/* PF1007L build L: the console UART gets no pins, on purpose. */
++#elif CONFIG_CONS_INDEX == 1 && defined(CONFIG_UART0_PORT_F)
+ #if defined(CONFIG_MACH_SUN4I) || \
+     defined(CONFIG_MACH_SUN7I) || \
+     defined(CONFIG_MACH_SUN8I_R40)
+diff --git a/cmd/Kconfig b/cmd/Kconfig
+index 29de857..23b5571 100644
+--- a/cmd/Kconfig
++++ b/cmd/Kconfig
+@@ -1747,6 +1747,16 @@ config CMD_USB_MASS_STORAGE
+ 	  export a block device: U-Boot, the USB device, acts as a simple
+ 	  external hard drive plugged on the host USB port.
+ 
++config CMD_UMS_NO_ABORT
++	bool "UMS: do not stop on console CTRL+C or on host eject"
++	depends on CMD_USB_MASS_STORAGE
++	help
++	  The ums command normally ends when the console receives CTRL+C or
++	  when the host sends START STOP UNIT (eject). On a board with a
++	  floating console RX pin, noise can look like CTRL+C. With this
++	  option ums ends only when the USB cable check fails or on an I/O
++	  error.
++
+ config CMD_UMS_ABORT_KEYED
+ 	bool "UMS abort with any key"
+ 	depends on CMD_USB_MASS_STORAGE
+diff --git a/cmd/usb_mass_storage.c b/cmd/usb_mass_storage.c
+index 634a926..f0bfc56 100644
+--- a/cmd/usb_mass_storage.c
++++ b/cmd/usb_mass_storage.c
+@@ -192,7 +192,7 @@ static int do_usb_mass_storage(struct cmd_tbl *cmdtp, int flag,
+ 		puts("Please connect USB cable.\n");
+ 
+ 		while (!g_dnl_board_usb_cable_connected()) {
+-			if (ctrlc()) {
++			if (!IS_ENABLED(CONFIG_CMD_UMS_NO_ABORT) && ctrlc()) {
+ 				puts("\rCTRL+C - Operation aborted.\n");
+ 				rc = CMD_RET_SUCCESS;
+ 				goto cleanup_register;
+diff --git a/configs/pf1007l_linux_defconfig b/configs/pf1007l_linux_defconfig
+new file mode 100644
+index 0000000..28c837e
+--- /dev/null
++++ b/configs/pf1007l_linux_defconfig
+@@ -0,0 +1,25 @@
++CONFIG_ARM=y
++CONFIG_ARCH_SUNXI=y
++CONFIG_DEFAULT_DEVICE_TREE="sun8i-a33-pf1007l-linux"
++CONFIG_SPL=y
++CONFIG_MACH_SUN8I_A33=y
++CONFIG_DRAM_CLK=456
++CONFIG_DRAM_ZQ=31739
++# CONFIG_VIDEO_SUNXI is not set
++# CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
++CONFIG_CONS_INDEX=1
++CONFIG_SUNXI_CONSOLE_NO_PINMUX=y
++CONFIG_AXP_DCDC1_VOLT=3300
++CONFIG_AXP_DCDC2_VOLT=1200
++CONFIG_AXP_ALDO1_VOLT=3300
++CONFIG_BOOTDELAY=-2
++CONFIG_USE_BOOTCOMMAND=y
++CONFIG_BOOTCOMMAND="setenv stdin nulldev; if load mmc 0:1 ${scriptaddr} /boot.scr; then source ${scriptaddr}; fi; while true; do ums 0 mmc 0; sleep 3; done"
++CONFIG_SYS_CONSOLE_IS_IN_ENV=y
++CONFIG_SYS_DEVICE_NULLDEV=y
++CONFIG_ENV_IS_NOWHERE=y
++# CONFIG_ENV_IS_IN_FAT is not set
++CONFIG_USB_MUSB_GADGET=y
++CONFIG_CMD_USB_MASS_STORAGE=y
++CONFIG_CMD_UMS_NO_ABORT=y
++CONFIG_CRC32_VERIFY=y
+diff --git a/configs/pf1007l_qemu_opipc_defconfig b/configs/pf1007l_qemu_opipc_defconfig
+new file mode 100644
+index 0000000..35ff667
+--- /dev/null
++++ b/configs/pf1007l_qemu_opipc_defconfig
+@@ -0,0 +1,28 @@
++CONFIG_ARM=y
++CONFIG_ARCH_SUNXI=y
++CONFIG_DEFAULT_DEVICE_TREE="sun8i-h3-orangepi-pc"
++CONFIG_SPL=y
++CONFIG_MACH_SUN8I_H3=y
++CONFIG_DRAM_CLK=624
++# CONFIG_SYS_MALLOC_CLEAR_ON_INIT is not set
++CONFIG_SPL_I2C=y
++CONFIG_SPL_SYS_I2C_LEGACY=y
++CONFIG_SYS_I2C_MVTWSI=y
++CONFIG_SY8106A_POWER=y
++# TEST ONLY: U-Boot for `qemu-system-arm -M orangepi-pc`. Same source, same
++# boot command and same script options as pf1007l_linux_defconfig, but the
++# Orange Pi PC board (Allwinner H3) and a visible serial console.
++# Same console input rule as build L (stdin=nulldev). QEMU does not model the pin mux,
++# so the serial output of this test build is still visible.
++CONFIG_SUNXI_CONSOLE_NO_PINMUX=y
++CONFIG_BOOTDELAY=-2
++CONFIG_USE_BOOTCOMMAND=y
++CONFIG_BOOTCOMMAND="setenv stdin nulldev; if load mmc 0:1 ${scriptaddr} /boot.scr; then source ${scriptaddr}; fi; while true; do ums 0 mmc 0; sleep 3; done"
++CONFIG_SYS_CONSOLE_IS_IN_ENV=y
++CONFIG_SYS_DEVICE_NULLDEV=y
++CONFIG_ENV_IS_NOWHERE=y
++# CONFIG_ENV_IS_IN_FAT is not set
++CONFIG_USB_MUSB_GADGET=y
++CONFIG_CMD_USB_MASS_STORAGE=y
++CONFIG_CMD_UMS_NO_ABORT=y
++CONFIG_CRC32_VERIFY=y
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index d76ab97..9f7204c 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -664,13 +664,15 @@ static int sleep_thread(struct fsg_common *common)
+ 		}
+ 
+ 		if (k == 10) {
+-			/* Handle START-STOP UNIT */
+-			if (common->eject)
+-				return -EPIPE;
+-
+-			/* Handle CTRL+C */
+-			if (ctrlc())
+-				return -EPIPE;
++			if (!IS_ENABLED(CONFIG_CMD_UMS_NO_ABORT)) {
++				/* Handle START-STOP UNIT */
++				if (common->eject)
++					return -EPIPE;
++
++				/* Handle CTRL+C */
++				if (ctrlc())
++					return -EPIPE;
++			}
+ 
+ 			/* Check cable connection */
+ 			if (!g_dnl_board_usb_cable_connected())
+@@ -1323,6 +1325,10 @@ static int do_start_stop(struct fsg_common *common)
+ 		return -EINVAL;
+ 	}
+ 
++	/* The host's eject is accepted but does not end the ums command. */
++	if (IS_ENABLED(CONFIG_CMD_UMS_NO_ABORT))
++		return 0;
++
+ 	common->eject = 1;
+ 
+ 	return 0;
+diff --git a/include/configs/sunxi-common.h b/include/configs/sunxi-common.h
+index b29a25d..a156a92 100644
+--- a/include/configs/sunxi-common.h
++++ b/include/configs/sunxi-common.h
+@@ -244,7 +244,11 @@
+ 
+ #include <config_distro_bootcmd.h>
+ 
+-#ifdef CONFIG_USB_KEYBOARD
++#if defined(CONFIG_SUNXI_CONSOLE_NO_PINMUX)
++/* PF1007L build L: the console UART has no pins, so it gives no input. */
++#define CONSOLE_STDIN_SETTINGS \
++	"stdin=nulldev\0"
++#elif defined(CONFIG_USB_KEYBOARD)
+ #define CONSOLE_STDIN_SETTINGS \
+ 	"stdin=serial,usbkbd\0"
+ #else

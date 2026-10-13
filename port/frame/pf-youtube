@@ -1,0 +1,20 @@
+#!/bin/bash
+# Stream a CPU-friendly YouTube format without storing a video on the SD card.
+set -euo pipefail
+
+yt_dlp="$HOME/.local/yt-dlp-venv/bin/yt-dlp"
+format='best[height<=480][vcodec^=avc1][acodec^=mp4a]/bestvideo[height<=480][vcodec^=avc1]+bestaudio[acodec^=mp4a]/18'
+
+if [[ $# -ne 1 ]]; then
+  echo "Usage: $(basename "$0") <YouTube URL>" >&2
+  exit 64
+fi
+if [[ ! -x "$yt_dlp" ]]; then
+  echo "Run pf-install-yt-dlp first." >&2
+  exit 69
+fi
+
+exec mpv --force-window=yes \
+  --script-opts="ytdl_hook-ytdl_path=$yt_dlp" \
+  --ytdl-format="$format" \
+  "$1"

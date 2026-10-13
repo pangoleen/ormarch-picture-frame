@@ -1,0 +1,13 @@
+#!/bin/bash
+set -euo pipefail
+
+systemctl --user start pf-keyboard.service
+visible=$(gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 \
+  --method org.freedesktop.DBus.Properties.Get sm.puri.OSK0 Visible)
+if [[ $visible == *true* ]]; then
+  next=false
+else
+  next=true
+fi
+gdbus call --session --dest sm.puri.OSK0 --object-path /sm/puri/OSK0 \
+  --method sm.puri.OSK0.SetVisible "$next" >/dev/null

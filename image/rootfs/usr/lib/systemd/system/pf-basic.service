@@ -1,0 +1,12 @@
+[Unit]
+Description=PF1007L stage marker: local file systems are mounted; first log copy
+After=local-fs.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/lib/pf1007l/pf-stage 50-local-fs-mounted
+# First copy of the kernel log to the card, as early as the card is writable.
+ExecStart=-/usr/lib/pf1007l/pf-collect early
+
+[Install]
+WantedBy=basic.target

@@ -1,0 +1,120 @@
+#!/bin/sh
+# PF1007L initramfs /init (busybox). Goal: the Mac sees the frame on USB as early
+# as possible, also when the root file system cannot be mounted.
+#
+#   1. load the watchdog driver (it gives the kernel a way to restart the SoC)
+#   2. mount the FAT partition of the SD card, write a stage marker
+#   3. USB gadget up (ACM serial + NCM network): same script as the real system
+#   4. mount the root file system read-only, switch to it
+#   On an error: stage marker, a root shell on the USB serial port, then restart.
+#
+# The SD card is found by the MBR disk signature in root=PARTUUID=xxxxxxxx-02.
+# This script mounts only partitions of that disk. It never touches another disk.
+
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs dev /dev 2>/dev/null
+mkdir -p /run /boot /new_root /dev/pts
+mount -t tmpfs -o mode=755,nosuid,nodev tmpfs /run
+
+PF_BOOT=/boot
+PF_RUN=/run/pf1007l
+PF_INITRAMFS=1
+. /usr/lib/pf1007l/pf-lib.sh
+
+kmsg() { echo "pf1007l-initramfs: $*" > /dev/kmsg; }
+
+# ---- kernel command line ----------------------------------------------------
+root=""; rootfstype=ext4; rootflags=ro; init=/sbin/init; pf_shell=0
+for arg in $(cat /proc/cmdline); do
+	case "$arg" in
+	root=*) root=${arg#root=} ;;
+	rootfstype=*) rootfstype=${arg#rootfstype=} ;;
+	init=*) init=${arg#init=} ;;
+	pf.shell) pf_shell=1 ;;
+	esac
+done
+
+# ---- modules (list made at build time, in dependency order) -------------------
+while read -r m; do
+	[ -n "$m" ] && { insmod "/lib/modules/$m" 2>/dev/null || kmsg "insmod $m failed"; }
+done < /lib/modules/pf-modules.list
+
+# ---- find the SD card by its MBR disk signature --------------------------------
+sig=""
+case "$root" in PARTUUID=*) sig=${root#PARTUUID=}; rootpart=${sig#*-}; sig=${sig%-*} ;; esac
+disk=""
+find_disk() {
+	for b in /sys/block/mmcblk*; do
+		[ -e "$b" ] || continue
+		d=${b##*/}
+		case "$d" in *boot*|*rpmb*) continue ;; esac
+		s=$(dd if="/dev/$d" bs=1 skip=440 count=4 2>/dev/null | od -A n -t x1 | tr -d ' \n')
+		# The bytes are little-endian on the disk: reverse them.
+		s=$(echo "$s" | sed 's/\(..\)\(..\)\(..\)\(..\)/\4\3\2\1/')
+		[ "$s" = "$sig" ] && { disk=$d; return 0; }
+	done
+	return 1
+}
+if [ -n "$sig" ]; then
+	i=0
+	while ! find_disk && [ "$i" -lt 100 ]; do sleep 0.1; i=$((i + 1)); done
+fi
+
+# ---- FAT partition: markers and gadget settings --------------------------------
+if [ -n "$disk" ] && mount -t vfat -o rw,noatime,flush "/dev/${disk}p1" /boot 2>/dev/null; then
+	pf_stage 20-initramfs-start "disk=$disk"
+else
+	kmsg "FAT partition not mounted (disk='$disk'); markers are kept in RAM"
+	pf_stage 20-initramfs-start "no FAT partition"
+fi
+
+# ---- USB gadget -----------------------------------------------------------------
+if /usr/lib/pf1007l/pf-gadget up 5; then
+	pf_stage 30-gadget-up "$(cat /sys/class/udc/*/state 2>/dev/null | head -n 1)"
+else
+	pf_stage 30-gadget-FAILED "pf-gadget returned $?"
+fi
+
+# ---- rescue shell on the USB serial port ----------------------------------------
+rescue() {
+	pf_stage 39-initramfs-RESCUE "$*"
+	kmsg "RESCUE: $*"
+	# A root shell on ttyGS0 (if the gadget is up) for 10 minutes, then restart.
+	( while :; do
+		if [ -c /dev/ttyGS0 ]; then
+			setsid sh -c 'exec sh -l </dev/ttyGS0 >/dev/ttyGS0 2>&1'
+		fi
+		sleep 2
+	done ) &
+	sleep 600
+	sync; umount /boot 2>/dev/null
+	reboot -f
+}
+[ "$pf_shell" = 1 ] && rescue "pf.shell on the kernel command line"
+
+# ---- root file system -------------------------------------------------------------
+if [ -n "$disk" ]; then
+	rootdev="/dev/${disk}p${rootpart#0}"
+else
+	case "$root" in /dev/*) rootdev=$root ;; *) rootdev="" ;; esac
+fi
+[ -n "$rootdev" ] || rescue "no disk with signature '$sig' (root=$root)"
+i=0
+while [ ! -b "$rootdev" ] && [ "$i" -lt 100 ]; do sleep 0.1; i=$((i + 1)); done
+[ -b "$rootdev" ] || rescue "root device $rootdev does not exist"
+if ! mount -t "$rootfstype" -o ro "$rootdev" /new_root; then
+	rescue "mount of $rootdev ($rootfstype) failed"
+fi
+[ -x "/new_root$init" ] || [ -L "/new_root$init" ] || rescue "no $init on $rootdev"
+pf_stage 35-root-mounted "$rootdev"
+
+# ---- hand over ------------------------------------------------------------------------
+sync
+umount /boot 2>/dev/null
+umount /run 2>/dev/null
+mount --move /proc /new_root/proc 2>/dev/null || umount /proc
+mount --move /sys /new_root/sys 2>/dev/null || umount /sys
+mount --move /dev /new_root/dev 2>/dev/null
+exec switch_root /new_root "$init"

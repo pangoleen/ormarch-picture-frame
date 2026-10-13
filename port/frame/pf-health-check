@@ -1,0 +1,22 @@
+#!/bin/bash
+# Quick health report for daily use. Run on the frame as user frame.
+# Prints temp, RAM, swap pressure, failed units, session parts.
+set -uo pipefail
+echo "--- temp ---"
+cat /sys/class/thermal/thermal_zone0/temp 2>/dev/null || echo "no thermal sensor"
+echo "--- memory ---"
+free -h
+echo "--- swap + pressure ---"
+grep -E 'zram|swap' /proc/swaps 2>/dev/null || echo "no swap entry"
+cat /proc/pressure/memory 2>/dev/null | head -n 3 || echo "no PSI data"
+echo "--- failed units ---"
+systemctl --failed --no-legend 2>/dev/null || true
+systemctl --user --failed --no-legend 2>/dev/null || true
+echo "--- session ---"
+systemctl --user is-active pf-keyboard.service pipewire.socket wireplumber.service bt-agent.service 2>/dev/null || true
+systemctl is-active NetworkManager pf-bluetooth-uart.service bluetooth 2>/dev/null || true
+echo "--- config ---"
+hyprctl configerrors 2>/dev/null || echo "hyprctl not in session"
+echo "--- kernel guard ---"
+grep -E '^IgnorePkg' /etc/pacman.conf 2>/dev/null || echo "no IgnorePkg line"
+ls /etc/pacman.d/hooks/90-pf1007l-guard.hook 2>/dev/null || echo "no pacman guard hook"

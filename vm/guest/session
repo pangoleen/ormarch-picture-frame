@@ -1,0 +1,20 @@
+#!/bin/bash
+# Guest helper (root): start or stop the test session on tty1.
+#   session start [NAME=VALUE ...] -- COMMAND...   (the log goes to /var/log/vt-session.log, cleared at each start)
+#   session stop
+#   session log
+set -euo pipefail
+case ${1:-} in
+start)
+  shift; mkdir -p /run/vt-session; : > /run/vt-session/env
+  while [[ ${1:-} != -- ]]; do echo "$1" >> /run/vt-session/env; shift; done; shift
+  printf '%s\n' "$*" > /run/vt-session/cmd
+  systemctl stop vt-session.service 2>/dev/null || true
+  : > /var/log/vt-session.log; chown frame /var/log/vt-session.log
+  systemctl reset-failed vt-session.service 2>/dev/null || true
+  systemctl start --no-block vt-session.service
+  ;;
+stop) systemctl stop vt-session.service; loginctl list-sessions --no-legend | grep -c seat0 || true ;;
+log) cat /var/log/vt-session.log ;;
+*) sed -n '2,5p' "$0"; exit 1 ;;
+esac

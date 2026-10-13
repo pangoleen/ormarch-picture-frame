@@ -1,0 +1,39 @@
+.DS_Store
+
+# Reference clones (re-clone when needed)
+refs/
+
+# Local evidence and virtual-machine runs. The written reports remain public;
+# these trees can include hardware identifiers, cached packages, or many GB of
+# generated output.
+backups/
+dumps/
+image/test/
+kernel/logs/
+kernel/out/
+port/logs/
+vm/logs/
+wifi/logs/
+CLAUDE.md
+
+# Device dumps and backups: private (serials, MAC addresses, Wi-Fi credentials)
+backups/
+*.img
+*.img.gz
+script.bin
+dumps/raw/
+
+# Vendor binary blobs (copyright of the vendor): keep local, do not publish
+dumps/touch/*.fw
+dumps/touch/*.bin
+wifi/out/
+kernel/out/
+image/out/
+image/secrets/
+image/work/
+image/cache/
+vm/cache/
+vm/out/
+vm/run/
+**/__pycache__/
+*.pyc

@@ -1,0 +1,40 @@
+# PF1007L tested armv7 package set — 2026-10-12
+# This is the set that apply.sh installs and E052-E054 proved on the frame.
+# It is not upstream's base manifest. Do not run upstream bulk reinstall.
+# Chromium has no armv7 package here. Firefox replaces it.
+qt6-imageformats
+networkmanager
+bluez
+bluez-utils
+bluez-tools
+pipewire
+wireplumber
+squeekboard
+xdg-terminal-exec
+xdg-user-dirs
+adwaita-icon-theme
+woff2-font-awesome
+firefox
+nautilus
+mpv
+imv
+fastfetch
+btop
+ripgrep
+noto-fonts
+noto-fonts-emoji
+bat
+eza
+fd
+fzf
+tldr
+tmux
+slurp
+git
+foot
+hyprland
+quickshell
+uwsm
+wireless-regdb
+iwd
+iw

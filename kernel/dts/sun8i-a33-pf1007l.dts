@@ -1,0 +1,674 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Humblestead HM-PF1007-BK digital photo frame.
+ * Board: EFERCRO PF1007L_MB_V1.0. Vendor fex: [product] machine = "U708HC".
+ * SoC: Allwinner A33. Panel: 10.1" 800x1280 MIPI-DSI (JD9365DA class).
+ *
+ * DRAFT. Not booted. Not tested on hardware. See kernel/README.md.
+ * Compiled with the dtc of linux-armv7 7.2.10 against the v7.2.10 include
+ * tree (kernel/build.sh). That is a build, not a hardware test.
+ *
+ * Source of each value:
+ *   [fex]  dumps/sys_config.fex of THIS frame (section and key are given)
+ *   [pwr]  dumps/panel/power-sequence.md (vendor lcd.ko, read in disassembly)
+ *   [ref]  mainline sun8i-reference-design-tablet.dtsi value, NOT confirmed
+ *          on this board ("UNCONFIRMED - reference design")
+ *   [wifi] wifi/README.md section 8 (vendor rf_pm / wifi_pm, read in
+ *          disassembly, not measured)
+ *   [touch] dumps/touch/README.md (vendor gslX680new.ko, static analysis)
+ *   [cpu]  dumps/vendor-facts/README.md section 1 (vendor kernel + arisc)
+ *   TODO   open point, see kernel/README.md
+ *
+ * Build variants:
+ *   default                       SD card in the slot, no serial console.
+ *   -DPF1007L_UART0_ON_SD_PINS    UART0 on the SD pins PF2/PF4 (MicroSD
+ *                                 breakout). No SD card. For FEL boot only.
+ *                                 See sun8i-a33-pf1007l-uart0-sd.dts.
+ *   -DPF1007L_ENABLE_EMMC         Enable the eMMC (MMC2). Android is on it.
+ *                                 Project safety rule 3: no eMMC write
+ *                                 before PLAN.md Phase 9.
+ *   -DPF1007L_CPU_DVFS_DCDC3      cpu-supply = DCDC3 and a 1.04-1.20 V range,
+ *                                 so that cpufreq also changes the voltage.
+ *                                 OFF by default. Switch it on only after
+ *                                 the on-device check (see the CPU note).
+ *   -DPF1007L_WIFI_PWRSEQ_TWO_PINS  A/B test for Wi-Fi power: PL2 and PL6
+ *                                 go high together (the fragment of
+ *                                 wifi/README.md 8.2). Default: PL2 first,
+ *                                 then a wait, then PL6.
+ *   -DPF1007L_UART0_ON_PB_PINS    UART0 on PB0 (TX) / PB1 (RX), with the SD
+ *                                 card in use. Only useful if the two pads
+ *                                 can be found on the PCB (NOT known).
+ *
+ * Only the default file and the PF1007L_UART0_ON_SD_PINS variant are
+ * built into kernel/out/. The other switches get a compile check only.
+ */
+
+/dts-v1/;
+#include "sun8i-a33.dtsi"
+#include "sun8i-reference-design-tablet.dtsi"
+
+#include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/interrupt-controller/irq.h>
+
+/ {
+	model = "Humblestead HM-PF1007-BK (EFERCRO PF1007L)";
+	/* "efercro" is a PLACEHOLDER vendor prefix (not in vendor-prefixes.yaml). */
+	compatible = "efercro,pf1007l", "allwinner,sun8i-a33";
+
+	aliases {
+		mmc0 = &mmc0;	/* MicroSD */
+		mmc1 = &mmc1;	/* SDIO Wi-Fi */
+		mmc2 = &mmc2;	/* eMMC */
+#if defined(PF1007L_UART0_ON_SD_PINS) || defined(PF1007L_UART0_ON_PB_PINS)
+		serial0 = &uart0;
+#else
+		/*
+		 * The reference dtsi sets serial0 = &r_uart (PL2/PL3). On this
+		 * board PL2 is an output of the Wi-Fi power code
+		 * ([fex] [rf_para] chip_en = PL02) and [s_uart0] s_uart_used = 0.
+		 * Do not put a UART there.
+		 */
+		/delete-property/ serial0;
+#endif
+	};
+
+	/*
+	 * Console. The vendor console was ttyS0 = UART0, 115200
+	 * (dumps/vendor-facts/uboot-env.txt). UART0 is on PF2/PF4, the SD-card
+	 * pins, so the default build has NO serial console and no stdout-path.
+	 * The kernel then uses tty0 (the panel, when DRM is up). Do not put
+	 * console=ttyS0 on the command line of the default build: no UART
+	 * probes, so the name has no device.
+	 */
+	chosen {
+#if defined(PF1007L_UART0_ON_SD_PINS) || defined(PF1007L_UART0_ON_PB_PINS)
+		stdout-path = "serial0:115200n8";
+#else
+		/delete-property/ stdout-path;
+#endif
+	};
+
+	/*
+	 * Wi-Fi power, vendor order [wifi]:
+	 *   kernel boot: DLDO1 on, DLDO2 on, AXP GPIO0 = 1
+	 *   Wi-Fi on:    PL2 (chip_en) = 1, wait, PL6 (wl_reg_on) = 1
+	 * The two pins are active high ([fex] [rf_para] chip_en = PL02,
+	 * [wifi_para] wl_reg_on = PL06, both outputs, default 0).
+	 *
+	 * The wait between PL2 and PL6: two readings of the same vendor loop
+	 * (5 x const_udelay(0x066665b0)) gave 5 ms and about 125 ms.
+	 * The constant is 1000 * ((2199023 * HZ) >> 11) with HZ = 100, which
+	 * is udelay(1000) on 32-bit ARM. The vendor kernel has CONFIG_HZ=100
+	 * (its own embedded config). So the loop is mdelay(5) = 5 ms.
+	 * The 150 ms below is longer than the two readings. It is safe for the
+	 * 125 ms reading. It is safe for the 5 ms reading if the chip has
+	 * only a MINIMUM time between the two pins (UNCONFIRMED, no datasheet).
+	 *
+	 * "mmc-pwrseq-simple" sets all its reset GPIOs in one call, so it
+	 * cannot make this wait. PL2 is thus a fixed regulator with a start-up
+	 * delay, and it is the vmmc supply of the SDIO host. The MMC core
+	 * turns on vmmc (PL2 high, 150 ms), then vqmmc, waits 10 ms, and then
+	 * runs the pwrseq (PL6 high, post-power-on delay).
+	 */
+#ifndef PF1007L_WIFI_PWRSEQ_TWO_PINS
+	reg_wifi_chip_en: regulator-wifi-chip-en {
+		compatible = "regulator-fixed";
+		regulator-name = "wifi-chip-en";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&r_pio 0 2 GPIO_ACTIVE_HIGH>; /* PL2 */
+		enable-active-high;
+		startup-delay-us = <150000>;
+		vin-supply = <&reg_dldo1>;
+	};
+#endif
+
+	wifi_pwrseq: pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		/* "reset" is the opposite of "enable": ACTIVE_LOW. */
+#ifdef PF1007L_WIFI_PWRSEQ_TWO_PINS
+		reset-gpios = <&r_pio 0 2 GPIO_ACTIVE_LOW>, /* PL2 chip_en */
+			      <&r_pio 0 6 GPIO_ACTIVE_LOW>; /* PL6 wl_reg_on */
+#else
+		reset-gpios = <&r_pio 0 6 GPIO_ACTIVE_LOW>; /* PL6 wl_reg_on */
+#endif
+		/*
+		 * GUESS. The vendor kernel has no wait after PL6. 200 ms is the
+		 * value of the mainline Q8 tablets. The AIC driver needs the
+		 * card on the bus before it loads (wifi/README.md section 7).
+		 */
+		post-power-on-delay-ms = <200>;
+	};
+};
+
+/* ------------------------------------------------------------------ */
+/* CPU                                                                */
+/* ------------------------------------------------------------------ */
+
+/*
+ * CPU supply [cpu]: the vendor kernel (sunxi_cpufreq, "axp22_dcdc3") and
+ * the vendor arisc firmware (DVFS writes AXP register 0x23) use DCDC3 for
+ * the CPU. DCDC2 is the system / DDR-frequency rail. This is VERIFIED in the
+ * two binaries of this frame. It is NOT measured on the board.
+ * sun8i-reference-design-tablet.dtsi has cpu-supply = DCDC2: wrong for this
+ * board, so the property is removed below.
+ *
+ * Default (no switch): no cpu-supply. cpufreq changes the frequency only.
+ * DCDC2 and DCDC3 stay at 1.2 V (the fex boot value, [power_sply]). 1.2 V
+ * is the voltage of the highest OPP in sun8i-a33.dtsi (1.008 GHz) and of
+ * [fex] [dvfs_table] LV4. All lower OPPs are safe at 1.2 V. The cost is
+ * more heat at low frequency. This is safe if DCDC3 is the CPU rail, and
+ * also if it is not.
+ *
+ * -DPF1007L_CPU_DVFS_DCDC3: cpu-supply = DCDC3, range 1.04 V to 1.20 V.
+ * The OPP voltages come from sun8i-a33.dtsi. They are equal to the three
+ * vendor points in the range: [fex] [dvfs_table] 648 MHz / 1040 mV,
+ * 816 MHz / 1100 mV, 1008 MHz / 1200 mV. All three are steps of the
+ * AXP22x DCDC3 (600 mV + n x 20 mV).
+ * If the board feeds the CPU from a different rail, a low OPP then gives
+ * a voltage drop on the WRONG rail and the CPU still gets 1.2 V: no
+ * crash, but possibly an unstable system rail. Check first, on rooted
+ * vendor Android: AXP register 0x23 must change with the CPU frequency,
+ * register 0x22 must not (dumps/vendor-facts/README.md, "Certainty").
+ * The OPP table stops at 1.008 GHz. Do not add the 1.2 GHz / 1.344 GHz
+ * points of [dvfs_table] (1.32 V / 1.46 V) in this draft.
+ */
+&cpu0 {
+#ifdef PF1007L_CPU_DVFS_DCDC3
+	cpu-supply = <&reg_dcdc3>;
+#else
+	/delete-property/ cpu-supply;
+#endif
+};
+
+/* ------------------------------------------------------------------ */
+/* Display: DE -> TCON0 -> DSI -> panel                               */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Backlight. Overrides the reference node.
+ * [fex] [lcd0_para] lcd_pwm_ch = 0, [pwm0_para] PH00.
+ * [fex] lcd_pwm_freq = 50000 Hz -> period = 1e9 / 50000 = 20000 ns.
+ * [fex] lcd_pwm_pol = 0 -> normal polarity (BSP pwm-sunxi.c:
+ *       PWM_POLARITY_NORMAL = active high). The reference dtsi has
+ *       50000 ns and PWM_POLARITY_INVERTED: not valid for this board.
+ * [fex] lcd_bl_en = PH06, output, value 1 -> active high.
+ * [ref] brightness-levels, default-brightness-level, power-supply.
+ *       ([fex] [disp_init] lcd0_backlight = 197 of 255 = 77 %.)
+ */
+&backlight {
+	pwms = <&pwm 0 20000 0>;
+	enable-gpios = <&pio 7 6 GPIO_ACTIVE_HIGH>; /* PH6 */
+};
+
+&de {
+	status = "okay";
+};
+
+/*
+ * No pinctrl: the DSI lanes are dedicated pins. tcon0_out endpoint@1 -> dsi
+ * is in sun8i-a33.dtsi. There is no endpoint@0 (RGB/LVDS): sun4i_rgb_init()
+ * then prints "No panel or bridge found... RGB output disabled" and returns 0.
+ */
+&tcon0 {
+	status = "okay";
+};
+
+&dphy {
+	status = "okay";
+};
+
+&dsi {
+	/*
+	 * TODO: the regulator that feeds the SoC pin VCC-DSI is NOT known.
+	 * Placeholder = DCDC1 (always on), from the example in the binding
+	 * allwinner,sun6i-a31-mipi-dsi.yaml (A33, dsi@1ca0000). Candidates on
+	 * this board: DCDC1, DC1SW (lcd_power), ELDO3 (lcd_power1).
+	 * See kernel/README.md, "What can stop the first picture".
+	 */
+	vcc-dsi-supply = <&reg_dcdc1>;
+	status = "okay";
+
+	panel@0 {
+		/*
+		 * PLACEHOLDER compatible, from [fex] lcd_driver_name =
+		 * "yhk_zr789_sq9365_101". Needs kernel/patches/0001-*.patch.
+		 */
+		compatible = "yhk,zr789-sq9365-101", "jadard,jd9365da-h3";
+		reg = <0>;
+		/*
+		 * [fex] lcd_power = "axp22_dc1sw", lcd_power1 = "axp22_eldo3".
+		 * [pwr] the vendor turns on DC1SW, waits 10 ms, turns on ELDO3.
+		 * Off: ELDO3, then DC1SW.
+		 * The driver turns on "vccio" first, then "vdd", and turns them
+		 * off in the opposite order. This mapping gives the vendor
+		 * order. Which rail is the electrical VDD and which is VCCIO is
+		 * NOT known (both are 3.3 V in the fex). TODO: schematic or
+		 * meter.
+		 */
+		vccio-supply = <&reg_dc1sw>;
+		vdd-supply = <&reg_eldo3>;
+		/*
+		 * [fex] lcd_gpio_0 = PH07, output, value 1.
+		 * [pwr] the vendor code holds the pin at 1 to run and pulses it
+		 * to 0 for a reset -> active low.
+		 */
+		reset-gpios = <&pio 7 7 GPIO_ACTIVE_LOW>; /* PH7 */
+		backlight = <&backlight>;
+		/*
+		 * The panel is 800x1280 (portrait). The frame stands in
+		 * landscape. TODO: 90 or 270. Not known before the first
+		 * picture (project open question 7, ro.sf.hwrotation).
+		 */
+		rotation = <90>;
+	};
+};
+
+/* ------------------------------------------------------------------ */
+/* Touch: Silead GSL on TWI0                                          */
+/* ------------------------------------------------------------------ */
+
+/*
+ * The reference dtsi gives: i2c0 at 400 kHz, touchscreen@40, INT PB5
+ * (falling edge), power-gpios PH1. The fex agrees:
+ * [fex] [ctp_para] ctp_twi_id = 0, ctp_twi_addr = 0x40,
+ *       ctp_int_port = PB05, ctp_wakeup = PH01 (output, value 1),
+ *       ctp_power_ldo = "axp22_ldoio1", ctp_power_ldo_vol = 3300.
+ * [touch] ctp_name = "gsl_m86_hd" selects table entry 4 of the vendor
+ *       module. Its firmware array is extracted as
+ *       dumps/touch/gsl_m86_hd.fw (36960 bytes, mainline silead layout).
+ *       Install it as /usr/lib/firmware/silead/gsl_m86_hd.fw. The driver
+ *       stops its probe if the file is absent.
+ * [touch] Chip model: NOT proved, best estimate GSL1680. silead.c uses the
+ *       same code for all "silead,gsl*" names when firmware-name is set.
+ * [touch] Size 960 x 640 = 15 x 10 sensor lines x 64: UNCONFIRMED, test
+ *       with evtest. The fex values (1024 x 600, revert X and Y) describe
+ *       the output of the vendor point library, not the raw range, so they
+ *       are NOT used here.
+ * No swap and no inversion on purpose: the first evtest session must show
+ * the raw axes (dumps/touch/README.md section 8). Add
+ * touchscreen-swapped-x-y / -inverted-x / -inverted-y after that test.
+ * [touch] silead,max-fingers = 5 (vendor limit). The v7.2.10 driver does
+ *       not read the property; the binding permits it.
+ * avdd and vddio: the fex gives one LDO. Which chip pin it feeds is not
+ * known. The driver enables the two supplies together.
+ */
+&touchscreen {
+	compatible = "silead,gsl1680";
+	reg = <0x40>;
+	firmware-name = "gsl_m86_hd.fw";
+	avdd-supply = <&reg_ldo_io1>;
+	vddio-supply = <&reg_ldo_io1>;
+	touchscreen-size-x = <960>;
+	touchscreen-size-y = <640>;
+	silead,max-fingers = <5>;
+	status = "okay";
+};
+
+/* ------------------------------------------------------------------ */
+/* Accelerometer on TWI1: Silan SC7A20 (verified by I2C scan, E058)    */
+/* ------------------------------------------------------------------ */
+
+/*
+ * [fex] [gsensor_para] gsensor_twi_id = 1, gsensor_twi_addr = 0x19,
+ *       gsensor_int1 = PB06.
+ * [fex] [gsensor_list_para] (auto-detect list): stk831x, sc7a20, mir3da, msa.
+ * Android's sensors HAL names this device "sc7a20 detect Accelerometer".
+ * A 2026-10-13 test boot bound the stock st_accel_i2c driver at 0x19 and
+ * produced all three raw IIO axes. The normal boot keeps this node disabled
+ * until the board's axes are calibrated and a rollback-tested orientation
+ * service is ready. No interrupt is needed for the initial raw-read test.
+ */
+&i2c1 {
+	accelerometer@19 {
+		compatible = "silan,sc7a20";
+		reg = <0x19>;
+		status = "disabled";
+	};
+};
+
+/* ------------------------------------------------------------------ */
+/* Storage                                                            */
+/* ------------------------------------------------------------------ */
+
+/*
+ * MicroSD. The reference dtsi already has: vmmc = DCDC1, 4-bit, cd PB4.
+ * [fex] [mmc0_para] sdc_buswidth = 4, sdc_det = PB04,
+ *       sdc_power_supply = "axp22_dcdc1". The fex agrees.
+ * [ref] card-detect polarity (active low).
+ * [fex] [uart_para] the debug UART0 is on PF2/PF4 = SD CLK and SD D3.
+ *       UART0 and the SD card cannot be used at the same time.
+ */
+#ifdef PF1007L_UART0_ON_SD_PINS
+&mmc0 {
+	status = "disabled";
+};
+
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pf_pins>;
+	status = "okay";
+};
+#endif
+
+/*
+ * UART0 on PB0 (TX) / PB1 (RX): function "uart0" (mux 3) of the two pins in
+ * pinctrl-sun8i-a33.c. sun8i-a23-a33.dtsi has no pin group for it, so one
+ * is added here.
+ * [fex] [gpio_keys] key1 = PB00, key2 = PB01 (interrupt inputs): the vendor
+ * uses the two pins as keys. [fex] [uart2] (PB00/PB01) has uart_used = 0.
+ * It is NOT known if the pads are on the PCB (the frame has one button).
+ * If they are, this is a console that works with the SD card in the slot.
+ */
+#ifdef PF1007L_UART0_ON_PB_PINS
+#ifdef PF1007L_UART0_ON_SD_PINS
+#error "PF1007L_UART0_ON_PB_PINS and PF1007L_UART0_ON_SD_PINS: use one"
+#endif
+&pio {
+	uart0_pb_pins: uart0-pb-pins {
+		pins = "PB0", "PB1";
+		function = "uart0";
+	};
+};
+
+&uart0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&uart0_pb_pins>;
+	status = "okay";
+};
+#endif
+
+/*
+ * SDIO Wi-Fi (AIC8800DC per the project notes; no mainline driver; the
+ * out-of-tree driver binds by SDIO ID and reads no DT property).
+ * [fex] [wifi_para] wifi_sdc_id = 1. [mmc1_para] PG00-PG05, 4-bit,
+ *       sdc_detmode = 4 (no card-detect pin).
+ * [fex] [rf_para] module_power1 = "axp22_dldo1" 3.3 V,
+ *       module_power2 = "axp22_dldo2" 3.3 V.
+ * Which rail is the IO supply is NOT known. See the power note at the
+ * wifi_pwrseq node and at reg_dldo1 / reg_dldo2.
+ * keep-power-in-suspend: the AIC driver returns -EINVAL from its suspend
+ * hook without MMC_PM_KEEP_POWER (wifi/README.md section 7).
+ * [fex] wl_host_wake = PL07 (input). Not used: the driver build uses the
+ * in-band SDIO interrupt.
+ */
+&mmc1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc1_pg_pins>;
+#ifdef PF1007L_WIFI_PWRSEQ_TWO_PINS
+	vmmc-supply = <&reg_dldo1>;
+#else
+	vmmc-supply = <&reg_wifi_chip_en>;	/* PL2, fed from DLDO1 */
+#endif
+	vqmmc-supply = <&reg_dldo2>;
+	mmc-pwrseq = <&wifi_pwrseq>;
+	bus-width = <4>;
+	non-removable;
+	keep-power-in-suspend;
+	status = "okay";
+
+	wifi: wifi@1 {
+		reg = <1>;
+	};
+};
+
+/*
+ * eMMC. Android is on it. DISABLED by default (project safety rule 3).
+ * [fex] [mmc2_para] sdc_buswidth = 8, PC05/PC06/PC08-PC15, emmc_rst = PC16,
+ *       sdc_power_supply = "axp22_dcdc1".
+ * [fex] [mmc2_para] sdc_used = 0 in the stored fex. The vendor bootloader
+ *       probably sets it when it boots from eMMC (UNCONFIRMED).
+ * [fex] [card2_boot_para] card_line = 4: the boot code uses 4 bits.
+ * Another PF1007L unit (photo-frame-dashboard PR #6) had a U-Boot hang at
+ * 8 bits. If you see I/O errors: bus-width = <4>; max-frequency = <26000000>.
+ */
+&mmc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mmc2_8bit_pins>;
+	vmmc-supply = <&reg_dcdc1>;
+	bus-width = <8>;
+	non-removable;
+	cap-mmc-hw-reset;
+#ifdef PF1007L_ENABLE_EMMC
+	status = "okay";
+#else
+	status = "disabled";
+#endif
+};
+
+/* ------------------------------------------------------------------ */
+/* PMIC: AXP22x on RSB                                                */
+/* ------------------------------------------------------------------ */
+
+/*
+ * [fex] [pmu1_para] pmu_used = 1, [s_rsb0] s_rsb_used = 1, PL00/PL01.
+ * The reference dtsi gives "x-powers,axp223" at RSB address 0x3a3.
+ * TODO: the fex says "axp22" only. AXP223 is the RSB part of the family,
+ * but read the chip marking or the kernel log to confirm.
+ *
+ * The frame gets its power FROM the USB host. It must not drive VBUS
+ * (project decision, from the photo-frame-dashboard U-Boot patch).
+ * "x-powers,drive-vbus-en" makes axp20x-regulator.c set the N_VBUSEN pin
+ * to an output (axp20x-regulator.c:1730-1733), so remove it.
+ * [fex] [pmu1_para] pmu_vbusen_func = 1 ("as an input" in the BSP fex
+ * comments) agrees, but that value is also in the BSP file of a board that
+ * does drive VBUS, so it is weak evidence.
+ */
+&axp22x {
+	/delete-property/ x-powers,drive-vbus-en;
+	/delete-property/ drivevbus-supply;
+};
+
+&reg_drivevbus {
+	status = "disabled";
+};
+
+/*
+ * [fex] [rf_para] power_switch = port:power0<1><0>: AXP GPIO0, output.
+ * [wifi] the vendor kernel sets it to 1 at boot (rf_pm_probe) and keeps
+ * it. What it switches on the PCB is NOT known. Pin 0 of the
+ * "x-powers,axp221-gpio" controller is GPIO0 (pinctrl-axp209.c).
+ * reg_ldo_io0 (the LDO function of the same pin) stays disabled.
+ */
+&axp_gpio {
+	wifi-power-switch-hog {
+		gpio-hog;
+		gpios = <0 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "wifi-power-switch";
+	};
+};
+
+/* [fex] [power_sply] aldo1_vol = 3300. ([ref] has 3.0 V.) */
+&reg_aldo1 {
+	regulator-always-on;
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-name = "vcc-io";
+};
+
+/* [fex] [power_sply] aldo2_vol = 2500. */
+&reg_aldo2 {
+	regulator-always-on;
+	regulator-min-microvolt = <2500000>;
+	regulator-max-microvolt = <2500000>;
+	regulator-name = "vdd-dll";
+};
+
+/* [fex] [power_sply] aldo3_vol = 3000. */
+&reg_aldo3 {
+	regulator-always-on;
+	regulator-min-microvolt = <3000000>;
+	regulator-max-microvolt = <3000000>;
+	regulator-name = "vcc-pll-avcc";
+};
+
+/*
+ * [fex] [power_sply] dc1sw_vol = 3300 (a switch after DCDC1).
+ * [fex] [lcd0_para] lcd_power = "axp22_dc1sw".
+ * [pwr] the vendor waits 10 ms after DC1SW on, before ELDO3 on. The enable
+ *       delay below gives the same wait (pattern: sun50i-a64-pinetab.dts).
+ */
+&reg_dc1sw {
+	regulator-name = "vcc-lcd";
+	regulator-enable-ramp-delay = <10000>;
+};
+
+/* [fex] [power_sply] dcdc1_vol = 3300. ([ref] has 3.0 V.) */
+&reg_dcdc1 {
+	regulator-always-on;
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-name = "vcc-3v3";
+};
+
+/*
+ * [fex] [power_sply] dcdc2_vol = 1200. Always fixed at 1.2 V.
+ * [cpu] the vendor uses DCDC2 as the system rail (sunxi_ddrfreq).
+ */
+&reg_dcdc2 {
+	regulator-always-on;
+	regulator-min-microvolt = <1200000>;
+	regulator-max-microvolt = <1200000>;
+	regulator-name = "vdd-sys";
+};
+
+/*
+ * [fex] [power_sply] dcdc3_vol = 1200. [cpu] the vendor CPU rail.
+ * Default: fixed at 1.2 V. With PF1007L_CPU_DVFS_DCDC3: 1.04 V to 1.20 V
+ * (the lowest and the highest OPP voltage). See the CPU note.
+ */
+&reg_dcdc3 {
+	regulator-always-on;
+#ifdef PF1007L_CPU_DVFS_DCDC3
+	regulator-min-microvolt = <1040000>;
+#else
+	regulator-min-microvolt = <1200000>;
+#endif
+	regulator-max-microvolt = <1200000>;
+	regulator-name = "vdd-cpu";
+};
+
+/* [fex] [power_sply] dcdc5_vol = 1500. Same as [ref]. */
+
+/*
+ * [fex] [rf_para] module_power1 = "axp22_dldo1", 3300000 uV.
+ * [fex] [rf_para] module_power2 = "axp22_dldo2", 3300000 uV.
+ * [wifi] the vendor kernel turns on the two rails at boot, before PL2 and
+ * PL6, and does not turn them off in the Wi-Fi on/off code. always-on
+ * gives the same order (pattern: sun8i-r16-bananapi-m2m.dts, same rails).
+ */
+&reg_dldo1 {
+	regulator-always-on;
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-name = "vcc-wifi0";
+};
+
+&reg_dldo2 {
+	regulator-always-on;
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-name = "vcc-wifi1";
+};
+
+/*
+ * [fex] [power_sply] dldo4_val = 1800. The consumer is NOT known. Not
+ * always-on. If a device is dead under mainline, test regulator-always-on
+ * here (see kernel/README.md).
+ */
+&reg_dldo4 {
+	regulator-min-microvolt = <1800000>;
+	regulator-max-microvolt = <1800000>;
+	regulator-name = "dldo4-1v8";
+};
+
+/* [fex] [power_sply] eldo1_vol = 2800. Consumer NOT known. Not always-on. */
+&reg_eldo1 {
+	regulator-min-microvolt = <2800000>;
+	regulator-max-microvolt = <2800000>;
+	regulator-name = "eldo1-2v8";
+};
+
+/*
+ * [fex] [power_sply] eldo3_vol = 3300.
+ * [fex] [lcd0_para] lcd_power1 = "axp22_eldo3".
+ */
+&reg_eldo3 {
+	regulator-min-microvolt = <3300000>;
+	regulator-max-microvolt = <3300000>;
+	regulator-name = "vcc-lcd-1";
+};
+
+/*
+ * Kept from [ref] with no change: dc5ldo "vdd-cpus" (0.9-1.4 V, the fex has
+ * no value), dcdc5 "vcc-dram" 1.5 V, ldo_io1 "vcc-touchscreen" 3.3 V
+ * (= [fex] ctp_power_ldo), rtc_ldo, eldoin-supply = DCDC1,
+ * ac_power_supply, battery_power_supply ([fex] pmu_battery_cap = 0: the
+ * frame probably has no battery, UNCONFIRMED), LRADC volume keys.
+ */
+
+/* ------------------------------------------------------------------ */
+/* Audio: keep disabled until a separate, SD-safe test is available.  */
+/* ------------------------------------------------------------------ */
+
+/*
+ * [fex] [audio0] says audio is present and the speaker amplifier enable
+ * is PH09. Android and Wes Bos's independent PF1007L report both confirm
+ * the A33 codec drives the board speaker. The stock kernel has the codec
+ * and simple-card modules but not the simple-amplifier driver. A PH09 GPIO
+ * hog was tried in a separate DTB and that boot lost its microSD root
+ * device. Do not ship that change in `full`: a future audio test must start
+ * from the known-good DTB and prove its pinmux does not affect storage.
+ */
+&dai {
+	status = "disabled";
+};
+
+&codec {
+	status = "disabled";
+};
+
+&sound {
+	status = "disabled";
+};
+
+/* ------------------------------------------------------------------ */
+/* Serial                                                             */
+/* ------------------------------------------------------------------ */
+
+/*
+ * The reference dtsi enables r_uart on PL2/PL3. See the aliases note.
+ * PL2 is the Wi-Fi chip_en output on this board. With r_uart disabled and
+ * its pinctrl removed, the only user of PL2 in this file is the Wi-Fi power
+ * node, and PL3 has no user. kernel/build.sh checks this in the DTB.
+ * Carry forward for U-Boot: CONFIG_CONS_INDEX=5 (R_UART) makes U-Boot drive
+ * PL2 as a UART TX line, which is the Wi-Fi chip_en pin.
+ */
+&r_uart {
+	/delete-property/ pinctrl-names;
+	/delete-property/ pinctrl-0;
+	status = "disabled";
+};
+
+/* ------------------------------------------------------------------ */
+/* USB: one USB-C port. The host gives the power. Device mode only.   */
+/* ------------------------------------------------------------------ */
+
+/*
+ * [fex] [usbc0] usb_port_type = 2 (OTG), usb_id_gpio = PH08,
+ *       usb_det_vbus_gpio = "axp_ctrl", usb_drv_vbus_gpio = power4 (AXP).
+ * The fex is a generic OTG tablet configuration. The project decision
+ * (CLAUDE.md, photo-frame-dashboard U-Boot patch) is: peripheral mode, no
+ * ID detection, no VBUS drive.
+ * [fex] usb_det_vbus_gpio = "axp_ctrl" agrees with
+ *       usb0_vbus_power-supply = <&usb_power_supply> in the reference dtsi.
+ */
+&usb_otg {
+	dr_mode = "peripheral";
+};
+
+&usbphy {
+	/delete-property/ usb0_id_det-gpios;
+	/delete-property/ usb0_vbus-supply;
+};

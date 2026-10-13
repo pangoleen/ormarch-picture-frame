@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L - full board draft.  (extlinux label "full")
+ *
+ * = kernel/dts/sun8i-a33-pf1007l.dts with one change: the touch firmware name
+ * is the file that the image installs (/usr/lib/firmware/silead/gsl_m86_hd.fw,
+ * extracted from this frame's vendor module, see dumps/touch/README.md).
+ *
+ * build.sh uses kernel/out/sun8i-a33-pf1007l.dtb in place of this file when
+ * that DTB exists (the kernel agent's build).
+ */
+
+#include "sun8i-a33-pf1007l.dts"
+
+&touchscreen {
+	firmware-name = "gsl_m86_hd.fw";
+};

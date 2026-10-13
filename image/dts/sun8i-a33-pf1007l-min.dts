@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L - MINIMAL device tree for the first, blind boot.  (extlinux label "min")
+ *
+ * Goal: the smallest number of things that can go wrong before the Mac sees
+ * the frame on USB. This file does NOT include the board draft
+ * (kernel/dts/sun8i-a33-pf1007l.dts). It enables only:
+ *   - the MicroSD slot (MMC0)       -> root filesystem
+ *   - the USB port in device mode   -> serial console + network to the Mac
+ * Not described here, so the kernel does not touch them: PMIC (AXP223 on RSB),
+ * display, backlight, touch, Wi-Fi, eMMC, audio, UARTs, I2C.
+ *
+ * Why this is safe without a PMIC node [VERIFIED in source, UNCONFIRMED on the frame]:
+ *   - U-Boot build L already set the supply voltages to the vendor values
+ *     (DCDC1 3.3 V, DCDC2 1.2 V, DCDC3 1.2 V, DCDC5 1.5 V, ALDO1 3.3 V,
+ *     ALDO2 2.5 V, ALDO3 3.0 V). With no PMIC driver, nothing changes them.
+ *   - cpufreq changes only the clock (no cpu-supply). The highest OPP in
+ *     sun8i-a33.dtsi is 1.008 GHz at 1.2 V = the DCDC3 value.
+ *   - phy-sun4i-usb.c: with no usb0_vbus_det GPIO and no
+ *     usb0_vbus_power-supply, the PHY reports "VBUS present"
+ *     ("Fallback: report vbus as high"). The frame gets its power from VBUS,
+ *     so VBUS is present each time the frame runs.
+ *   - MMC0: "broken-cd" = poll for the card. No dependence on the polarity
+ *     of the card-detect pin (PB4), which is a reference-design guess.
+ */
+
+/dts-v1/;
+#include "sun8i-a33.dtsi"
+
+/ {
+	model = "Humblestead HM-PF1007-BK (EFERCRO PF1007L), minimal";
+	compatible = "efercro,pf1007l", "allwinner,sun8i-a33";
+
+	aliases {
+		mmc0 = &mmc0;
+	};
+
+	/* DCDC1 of the PMIC, set to 3.3 V by U-Boot build L. Always on. */
+	reg_vcc3v3: regulator-vcc3v3 {
+		compatible = "regulator-fixed";
+		regulator-name = "vcc-3v3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-always-on;
+	};
+};
+
+&mmc0 {
+	vmmc-supply = <&reg_vcc3v3>;
+	bus-width = <4>;
+	broken-cd;
+	status = "okay";
+};
+
+&usb_otg {
+	dr_mode = "peripheral";
+	status = "okay";
+};
+
+&usbphy {
+	status = "okay";
+};

@@ -1,0 +1,7 @@
+# Keep the kernel name (usb0) and the MAC address that pf-gadget set.
+[Match]
+Type=gadget
+
+[Link]
+NamePolicy=kernel
+MACAddressPolicy=none

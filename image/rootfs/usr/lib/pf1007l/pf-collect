@@ -1,0 +1,43 @@
+#!/bin/sh
+# pf-collect [reason]
+# Copies the kernel log, the journal of this start and a status report to the FAT
+# partition: /boot/pf/last/. A start with a dead USB link still leaves evidence
+# that a Mac can read from the card. The logs can hold MAC addresses and card
+# serial numbers: do not publish them as they are.
+. /usr/lib/pf1007l/pf-lib.sh
+reason=${1:-manual}
+status() {
+	echo "== pf1007l status ($reason)"
+	echo "date: $(date -u '+%Y-%m-%d %H:%M:%S') UTC (the frame has no clock battery)"
+	echo "uptime: $(pf_uptime) s   start counter (hex): $(pf_bootnum)"
+	echo "model: $(tr -d '\0' < /proc/device-tree/model 2>/dev/null)"
+	echo "kernel: $(uname -r)"
+	echo "cmdline: $(cat /proc/cmdline)"
+	echo; echo "== USB gadget"; /usr/lib/pf1007l/pf-gadget status 2>&1
+	echo; echo "== network"; ip -br link 2>&1; ip -br addr 2>&1
+	echo; echo "== failed units"; systemctl --failed --no-legend --no-pager 2>&1
+	echo "system state: $(systemctl is-system-running 2>&1)"
+	echo; echo "== block devices"; lsblk -o NAME,SIZE,TYPE,RO,FSTYPE,MOUNTPOINT 2>&1
+	for d in /sys/bus/mmc/devices/*; do [ -e "$d/type" ] && echo "mmc $(basename "$d"): type=$(cat "$d/type") name=$(cat "$d/name" 2>/dev/null)"; done
+	echo; echo "== SDIO devices (Wi-Fi gate: expect SDIO_ID=C8A1:C08D)"
+	cat /sys/bus/sdio/devices/*/uevent 2>/dev/null || echo "none"
+	echo; echo "== display (DRM connectors)"
+	for f in /sys/class/drm/*/status; do [ -f "$f" ] && echo "$f = $(cat "$f")"; done
+	echo; echo "== memory"; free -m 2>&1; swapon --show 2>&1; zramctl 2>&1
+	echo; echo "== cpu"; cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq 2>/dev/null
+	for z in /sys/class/thermal/thermal_zone*; do [ -r "$z/temp" ] && echo "$(cat "$z/type" 2>/dev/null): $(cat "$z/temp")"; done
+	echo; echo "== modules"; lsmod 2>&1
+	echo; echo "== first boot"; ls -la /var/lib/pf1007l 2>&1; tail -n 20 /var/log/pf1007l-firstboot.log 2>/dev/null
+}
+if ! pf_fat_ok; then
+	echo "pf-collect: the FAT partition is not mounted read-write at $PF_BOOT" >&2
+	exit 1
+fi
+pf_begin
+out=$PF_DIR/last
+mkdir -p "$out"
+status > "$out/status.txt" 2>&1
+dmesg > "$out/dmesg.txt" 2>&1
+journalctl -b -o short-monotonic --no-pager 2>&1 | tail -n 6000 > "$out/journal.txt"
+sync
+pf_stage "90-logs-saved" "$reason"

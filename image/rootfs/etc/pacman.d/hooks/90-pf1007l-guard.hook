@@ -1,0 +1,13 @@
+[Trigger]
+Type = Package
+Operation = Install
+Operation = Upgrade
+Target = linux-armv7
+Target = linux-armv7-headers
+Target = chromium
+
+[Action]
+Description = PF1007L guard: block kernel and chromium transactions
+When = PreTransaction
+Exec = /usr/lib/pf1007l/pf-pacman-guard
+AbortOnFail
