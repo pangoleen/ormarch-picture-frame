@@ -6,13 +6,15 @@ unfinished device-tree nodes on a daily-use frame.
 
 | Feature | Hardware evidence | Linux status | Next safe step |
 | --- | --- | --- | --- |
-| Speaker | Android plays through the A33 codec. The vendor `[audio0]` configuration sets the speaker-amp enable to PH09. Wes Bos independently recorded a working PF1007L speaker. | No ALSA card yet. | Create an audio-only DTB from the known-good Bluetooth DTB. Do not use a PH09 GPIO hog; its previous test disrupted the SD-root boot. |
-| Accelerometer | Vendor config puts it on I2C1 at `0x19`, interrupt PB06. Android names it `sc7a20 detect Accelerometer`. | Confirmed: the stock `st-accel-i2c` driver created `iio:device1` (`sc7a20`) and returned all three raw axes in the 2026-10-13 test boot. | Calibrate the axes for the frame's physical orientation, then add an orientation service with automatic rollback. |
-| Ambient light | Android ships a light-sensor HAL and declares the Android light-sensor feature. The vendor config reserves I2C1 `0x23`, PB07 and the LTR-501ALS detector; the original image also contains `ltr_501als.ko` for the LTR-558ALS family. | No Linux device is bound. The saved vendor configuration sets `ls_used = 0`; on 2026-10-13 the LTR ID and status registers at `0x23` returned no response. | Trace the sensor power/enable path and verify the physical chip's address before adding the mainline LTR-501 binding. |
+| Speaker | Android plays through the A33 codec. The vendor `[audio0]` configuration sets the speaker-amp enable to PH09. | **Working (E062).** Label `full-audio`. The mixer switch `AIF1 Slot 0 Digital DAC Playback Switch` must be on, or playback fails with an I/O error. `pf-speaker-amp.service` drives PH09 while audio plays. | Tune the volume range. Hide the unused capture device in the desktop. |
+| Accelerometer | Vendor config puts it on I2C1 at `0x19`, interrupt PB06. Android names it `sc7a20 detect Accelerometer`. | **Working (E062).** `pf-autorotate` (user service) rotates the output and the touch panel. Upright landscape reads x ≈ −1000 (monitor transform 3, touch 6). | Confirm the upside-down and the two portrait rows by hand; the portrait direction is a guess. |
+| Ambient light | Behind the front hole. It is an analog part on the A33 key-voltage converter (LRADC0); the vendor module `sunxi-keyboard.ko` reports it as the input device `lightsensor`. The `[ls_para]` I2C keys in the vendor config are unused template text. | **Working (E064).** Raw value 0–2 with the hole covered, 60–62 in a lit room. `pf-auto-brightness.service` reads it and sets the backlight. The mainline key driver for that pin must stay off (`pf1007l-lradc.conf`, `pf1007l-light-sensor.dtso`): it reads darkness as a held volume key and floods the desktop with volume scripts. | Record values in daylight and tune the level table. |
 | Touch | Silead GSL at I2C0 `0x40`. | Working. | None. |
 | Thermal | A33 thermal block. | Working through Linux thermal/IIO. | None. |
 | Buttons | AXP power key and LRADC input. | Present. | Map only after identifying desired actions. |
 | Internal Wi-Fi | AIC8800 SDIO radio. | Working at 2.4 GHz. | None. |
+| Microphone | The vendor config has microphone volume keys, but the stock firmware does not declare the microphone feature. | None found: MIC1, MIC2 and Line In recorded only noise at maximum gain while the speaker played a 1 kHz tone (E062). | None. |
+| Camera | Vendor config lists a `gc2035` on I2C2 with `vip_used = 0`; every camera driver line in the stock init script is commented out. | Not tested under Linux. | Look into the front hole: a lens is visible as dark glass. |
 | Internal Bluetooth | AIC8800 UART controller. | Working for LE HID pairing. | Keep the installed `full-bluetooth` label. |
 
 ## 5 GHz Wi-Fi

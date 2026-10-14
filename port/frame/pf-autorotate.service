@@ -1,0 +1,10 @@
+[Unit]
+Description=PF1007L automatic screen rotation (SC7A20 accelerometer)
+
+[Service]
+ExecStart=%h/.local/bin/pf-autorotate
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

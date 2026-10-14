@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L A33 internal-codec test, with the standard upstream A33 Vstar
+ * playback endpoint. The generic A33 node has the digital-to-analog DAC
+ * routes but no external DAPM sink.  Vstar adds the headphone endpoint below;
+ * it is a useful, no-GPIO test for boards whose speaker is fed by HP.
+ */
+
+/dts-v1/;
+/plugin/;
+
+&dai {
+	status = "okay";
+};
+
+&codec {
+	status = "okay";
+};
+
+&sound {
+	simple-audio-card,widgets = "Headphone", "Headphone Jack";
+	simple-audio-card,routing =
+		"Left DAC", "DACL",
+		"Right DAC", "DACR",
+		"Headphone Jack", "HP";
+	status = "okay";
+};

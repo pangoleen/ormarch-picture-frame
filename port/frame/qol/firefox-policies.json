@@ -1,0 +1,20 @@
+{
+  "policies": {
+    "DisableTelemetry": true,
+    "DisableFirefoxStudies": true,
+    "DontCheckDefaultBrowser": true,
+    "DisableAppUpdate": true,
+    "OverrideFirstRunPage": "",
+    "NoDefaultBookmarks": true,
+    "ExtensionSettings": {
+      "ff2mpv@yossarian.net": {
+        "installation_mode": "force_installed",
+        "install_url": "https://addons.mozilla.org/firefox/downloads/latest/ff2mpv/latest.xpi"
+      }
+    },
+    "Homepage": {
+      "URL": "about:blank",
+      "StartPage": "homepage"
+    }
+  }
+}

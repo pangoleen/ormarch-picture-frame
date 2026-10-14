@@ -1,0 +1,53 @@
+#!/bin/bash
+# pf-webview: show one web page full screen with no browser controls (kiosk), like the kiosk app of
+# Wes Bos's photo-frame-dashboard. It uses Firefox with its own small profile.
+#
+#   pf-webview start [URL]      default: the URL saved by "boot on", else the local dashboard
+#   pf-webview stop             (also in the power-key menu: "Close web view")
+#   pf-webview boot on [URL]    start it at every login
+#   pf-webview boot off
+#   pf-webview status
+# The local dashboard is served from ~/.local/share/pf-dashboard on http://127.0.0.1:8085/
+# (pf-dashboard.service). It closes a normal Firefox first: two Firefox processes do not fit in 1 GB.
+set -u
+conf=$HOME/.config/pf-webview.conf
+flag=$HOME/.config/pf-webview.boot
+prof=$HOME/.local/share/pf-webview/profile
+local_url=http://127.0.0.1:8085/
+saved_url() { [ -f "$conf" ] && sed -n 's/^url=//p' "$conf" | head -1; }
+running() { pgrep -f -- "--profile $prof" >/dev/null; }
+
+case ${1:-start} in
+  start | boot-start)
+    [ "$1" = boot-start ] && [ ! -f "$flag" ] && exit 0
+    url=${2:-$(saved_url)}
+    url=${url:-$local_url}
+    running && exit 0
+    if pgrep -x firefox >/dev/null; then
+      notify-send -t 4000 "Web view" "Closing Firefox first (memory)" 2>/dev/null
+      pkill -x firefox
+      for _ in $(seq 1 20); do pgrep -x firefox >/dev/null || break; sleep 0.5; done
+    fi
+    [ "$url" = "$local_url" ] && systemctl --user start pf-dashboard.service 2>/dev/null
+    mkdir -p "$prof"
+    cat >"$prof/user.js" <<'JS'
+user_pref("browser.sessionstore.resume_from_crash", false);
+user_pref("browser.shell.checkDefaultBrowser", false);
+user_pref("browser.startup.homepage_override.mstone", "ignore");
+user_pref("datareporting.policy.dataSubmissionEnabled", false);
+user_pref("toolkit.legacyUserProfileCustomizations.stylesheets", false);
+JS
+    exec env MOZ_ENABLE_WAYLAND=1 firefox --new-instance --profile "$prof" --name pf-webview --kiosk "$url" >/dev/null 2>&1
+    ;;
+  stop) pkill -f -- "--profile $prof" ;;
+  boot)
+    case ${2:-} in
+      on) url=${3:-$(saved_url)}; printf 'url=%s\n' "${url:-$local_url}" >"$conf"; touch "$flag"
+          echo "Web view starts at every login: $(saved_url)" ;;
+      off) rm -f "$flag"; echo "Web view no longer starts at login." ;;
+      *) echo "Use: pf-webview boot on [URL] | boot off"; exit 1 ;;
+    esac
+    ;;
+  status) running && echo "running" || echo "stopped"; [ -f "$flag" ] && echo "boot: on ($(saved_url))" || echo "boot: off" ;;
+  *) sed -n '2,12p' "$0"; exit 1 ;;
+esac

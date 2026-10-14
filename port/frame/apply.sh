@@ -19,6 +19,9 @@ sudo env ALL_PROXY="${ALL_PROXY:-}" pacman -S --noconfirm --needed \
   firefox nautilus mpv imv fastfetch btop ripgrep noto-fonts noto-fonts-emoji \
   bat eza fd fzf tldr tmux slurp foot hyprland quickshell uwsm wireless-regdb iwd iw git
 sudo install -m 755 "$here/pf-pacman-guard" /usr/lib/pf1007l/pf-pacman-guard
+sudo install -m 644 "$here/pf1007l-lradc.conf" /etc/modprobe.d/pf1007l-lradc.conf
+sudo install -D -m 644 "$here/system/session-stop.conf" /etc/systemd/system/session-.scope.d/10-pf-stop.conf
+sudo install -D -m 644 "$here/system/manager-stop.conf" /etc/systemd/system.conf.d/10-pf-stop.conf
 sudo python3 "$here/guard-updater.py" "$OMARCHY_PATH"
 
 mkdir -p "$HOME/.local/bin" "$HOME/.config/systemd/user" \

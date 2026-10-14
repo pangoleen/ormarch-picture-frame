@@ -1,0 +1,37 @@
+#!/bin/bash
+# omasnap for the PF1007L: Omarchy's screenshot tool has no ARM package, so this small stand-in gives
+# omarchy-capture-screenshot what it calls: omasnap [--copy] [--save] [smart|region|windows|fullscreen|scroll]
+# and "omasnap FILE" (open a picture). It uses grim, slurp and wl-copy. On this touch frame the
+# default mode is the whole screen.
+mode=fullscreen
+copy=0
+save=0
+for arg in "$@"; do
+  case $arg in
+    --copy) copy=1 ;;
+    --save) save=1 ;;
+    smart | fullscreen | scroll) mode=fullscreen ;;
+    region | windows) mode=region ;;
+    *) [ -f "$arg" ] && exec imv "$arg" ;;
+  esac
+done
+((copy == 0 && save == 0)) && copy=1 save=1
+
+dir=${OMASNAP_SCREENSHOT_DIR:-$(xdg-user-dir PICTURES 2>/dev/null || echo "$HOME/Pictures")}
+mkdir -p "$dir"
+file=$dir/screenshot-$(date +%F_%H-%M-%S).png
+tmp=$(mktemp --suffix=.png)
+if [ "$mode" = region ]; then
+  area=$(slurp 2>/dev/null) || { rm -f "$tmp"; exit 1; }
+  grim -g "$area" "$tmp" || exit 1
+else
+  grim "$tmp" || exit 1
+fi
+((copy)) && wl-copy --type image/png <"$tmp"
+if ((save)); then
+  mv "$tmp" "$file"
+  notify-send -t 3000 "Screenshot" "Saved in $file" 2>/dev/null
+else
+  rm -f "$tmp"
+  notify-send -t 3000 "Screenshot" "Copied" 2>/dev/null
+fi

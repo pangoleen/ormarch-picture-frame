@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "frame.dictation",
+  "name": "Dictation status",
+  "version": "1.0.0",
+  "description": "Shows the state of the frame's local speech model: loading, listening, transcribing",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "Dictation",
+    "category": "Input",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

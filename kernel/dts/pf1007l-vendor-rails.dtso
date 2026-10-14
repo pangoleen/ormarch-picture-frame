@@ -1,0 +1,21 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L test overlay: keep on the two PMIC rails that the vendor boot
+ * switches on ([fex] [power_sply] eldo1_vol = 2800, dldo4_val = 1800) and
+ * that mainline leaves off because no Linux driver uses them.
+ *
+ * Purpose: find out if a part that does not answer under Linux (the light
+ * sensor at I2C1 0x23) only lacks its supply. The voltages are the vendor
+ * values and are already fixed in the board DTS.
+ */
+
+/dts-v1/;
+/plugin/;
+
+&reg_eldo1 {
+	regulator-always-on;
+};
+
+&reg_dldo4 {
+	regulator-always-on;
+};

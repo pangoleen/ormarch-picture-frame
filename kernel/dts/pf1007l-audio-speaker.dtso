@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L A33 internal codec: speaker output.
+ *
+ * Apply to a copy of a known-good DTB (kernel/tools/build-audio-test-dtb.sh).
+ *
+ * Measured on the frame (docs/experiments.md E062):
+ *  - The base A33 card registers with only the three status changes, but
+ *    playback returns I/O errors until the mixer switch
+ *    "AIF1 Slot 0 Digital DAC Playback Switch" is on. The codec is the clock
+ *    master; with a closed DAPM path it gives the DAI no clock.
+ *  - The speaker amplifier takes the HP output. Its enable pin is PH09
+ *    (vendor fex audio_pa_ctrl). The stock kernel has no simple-amplifier
+ *    driver, so user space drives PH09 (pf-speaker-amp.service). This overlay
+ *    does not claim PH09.
+ *  - No microphone: with the routes "ADCL" <- "Left ADC", "ADCR" <- "Right ADC",
+ *    "MIC1"/"MIC2" <- "Mic" <- "MBIAS"/"HBIAS" the ADC ran, but a 1 kHz tone
+ *    from the speaker did not show on MIC1, MIC2 or Line In at maximum gain.
+ *    Those routes are left out so that the desktop shows no dead input.
+ *
+ * Widget names are from /sys/kernel/debug/asoc on kernel 7.2.10.
+ */
+
+/dts-v1/;
+/plugin/;
+
+&dai {
+	status = "okay";
+};
+
+&codec {
+	status = "okay";
+};
+
+&sound {
+	simple-audio-card,widgets = "Speaker", "Speaker";
+	simple-audio-card,routing =
+		"Left DAC", "DACL",
+		"Right DAC", "DACR",
+		"Speaker", "HP";
+	status = "okay";
+};

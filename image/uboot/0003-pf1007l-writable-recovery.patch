@@ -1,0 +1,30 @@
+diff --git a/cmd/usb_mass_storage.c b/cmd/usb_mass_storage.c
+--- a/cmd/usb_mass_storage.c
++++ b/cmd/usb_mass_storage.c
+@@ -31,9 +31,10 @@
+ static int ums_write_sector(struct ums *ums_dev,
+ 			    ulong start, lbaint_t blkcnt, const void *buf)
+ {
+-	/* PF1007L backup build: never write to storage. */
+-	printf("ums: refused write of " LBAF " blocks at " LBAF "\n", blkcnt, start);
+-	return 0;
++	struct blk_desc *block_dev = &ums_dev->block_dev;
++	lbaint_t blkstart = start + ums_dev->start_sector;
++
++	return blk_dwrite(block_dev, blkstart, blkcnt, buf);
+ }
+ 
+ static struct ums *ums;
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2494,9 +2494,6 @@
+ 
+ 	for (i = 0; i < nluns; i++) {
+ 		common->luns[i].removable = 1;
+-		/* PF1007L backup build: report write-protect to the host. */
+-		common->luns[i].initially_ro = 1;
+-
+ 		rc = fsg_lun_open(&common->luns[i], ums[i].num_sectors, ums->block_dev.blksz, "");
+ 		if (rc)
+ 			goto error_luns;

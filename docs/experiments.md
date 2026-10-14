@@ -2135,3 +2135,638 @@ returned empty, 502, or disabled. `yt-dlp` 2025.12.08 is installed from extra.
 Local proof instead: a generated 640x480 H264 clip played in `mpv` on screen
 at 72% of one core. Proof: `dumps/boots/2026-10-12-first-picture/codex-mpv-local-playback.png`.
 So 480p H264 streams play; only the YouTube URL gate is open. No eMMC write.
+
+## 2026-10-13 — E059: Audio failures and writable SD-recovery experiment
+
+**Audio:** a basic overlay of the known-good Bluetooth DTB enables only DAI,
+codec and sound. It registered `sun8i-a33-audio` on one boot. PCM playback
+stalled and reported I/O errors. Later audio-enabled boots did not bring up SSH;
+Vstar headphone routing was also unsuccessful. GPIO PH09 (pin 233) was confirmed
+unclaimed in the stable boot, but no runtime GPIO write was performed.
+The speaker is not working under Linux yet. Failure causes remain unknown.
+
+**Recovery:** twice restored `DEFAULT full-bluetooth` through the physical Mac
+card reader. Stable USB SSH returned, type `SD`, with zero failed units. Built
+an opt-in U-Boot variant that restores upstream UMS writes and removes the
+host-facing write-protect flag while retaining build L's SD-only controller
+configuration. Wrote exactly 536,576 bytes at SD offset 8 KiB over SSH after
+verifying the existing loader and saving it on the FAT partition. Full readback
+matched. Set `pf_mode=ums` in `/boot/uEnv.txt`, with its previous file backed up,
+and rebooted for a controlled USB test. No usable recovery disk appeared.
+
+**Host reset attempt:** hub control reported power off/on; the device briefly
+appeared as an Allwinner gadget, then no disk or SSH was available. This does
+not prove a physical power reset. E020 already reports that hub power control
+can fail to restart this frame. Earlier conversational claims of a successful
+power reset and safe recovery wait were too strong.
+
+**Offline verification:** original and writable U-Boot have identical configs
+and first 32 KiB (including SPL). Both eGON checksums pass. These are integrity
+checks only. Writable recovery has failed its first hardware test and remains
+experimental; normal image building does not select it. eMMC was not written.
+
+**Next:** physical card access for loader rollback plus removal of the forced
+UMS override, then capture boot-stage evidence before further audio changes.
+Procedure and next diagnostic sequence: `docs/audio-recovery.md`.
+
+## 2026-10-13 — E060: Physical replug validates writable SD recovery
+
+After the owner physically disconnected/reconnected the cable, the Mac saw
+`UMS disk 0`, 31,914,983,424 bytes, with both media and PFBOOT volume writable.
+SSH was unavailable as expected while U-Boot runs UMS. Created and read back a
+small marker at `/pf/writable-recovery-check.txt`, flushed it, and restored the
+exact saved `uEnv.txt.before-writable-recovery-test` to `uEnv.txt`. Preserved the
+forced UMS settings separately, verified `DEFAULT full-bluetooth`, and ejected
+the USB disk safely. No SD removal or eMMC write was needed. Paused the
+connectivity heartbeat. Next physical replug is required to check Linux boot.
+
+This proves writable UMS enumeration and FAT-file editing on this frame after
+a real power cycle. It does not prove reliable software reset, repeatability,
+or audio. Keep the normal image builder on read-only build L for now.
+
+## 2026-10-13 — E061: Stable Linux boot after the recovery restore; state check on a powered USB supply
+
+**Question:** Does the frame boot the stable entry after the E060 restore? What is the live state?
+
+**Setup:** the owner moved the frame to a powered USB cable/hub and replugged it. Read-only checks over
+USB SSH at 19:07, uptime 39 min.
+
+**Result:**
+
+- Kernel command line `pf.label=full-bluetooth`; `extlinux.conf` says `DEFAULT full-bluetooth`. No failed
+  system units. `pf-hyprland`, NetworkManager, `bluetooth` and `pf-bluetooth-uart` are active. `wlan0` is
+  connected. The E060 "next physical replug" check is passed.
+- The loader on the card is still the **writable-recovery U-Boot**, not build L: a read of 536,576 bytes at
+  SD offset 8 KiB differs from the saved build L file at byte 32,773 (the first 32 KiB are equal, as E059
+  measured). So this boot also shows that the writable variant boots Linux. `uEnv.txt` is the restored
+  normal file (441 bytes, equal in size to the saved one; content not compared byte by byte).
+- RAM: 447 MiB used, 531 MiB available, swap 0. Quickshell 179 MiB RSS, Hyprland 111 MiB. Card: 4.4 GB of
+  29 GB used. Temperature 44.7 °C. Governor `schedutil`.
+- Power: `axp20x-usb online=1` with `input_current_limit` 900 mA; `axp22x-ac online=1`. Backlight 4 of 10.
+- Sound: `aplay -l` reports no sound card (expected on this label).
+
+**Not tested:** a higher backlight level on the new supply; the current that the frame draws; whether the
+900 mA USB limit applies when the AC input also reports online.
+
+**Next:** backlight step test on the powered supply (4 → 10, with `dmesg` and the owner's eyes for the
+vertical lines), then the audio diagnostic sequence of `docs/audio-recovery.md`.
+
+## 2026-10-13 — E062: Speaker works; no microphone; auto-rotate; light sensor still not found; full backlight
+
+**Setup:** the frame is on a powered USB supply (owner). Test boots used a new label `lab` (Bluetooth +
+accelerometer DTB with overlays); after each boot the default went back to `full-bluetooth` at once.
+Soft reboots worked four times (about 110 s each).
+
+**Backlight:** levels 5 to 10 of 10, 9 s each: no reset, no kernel message, 44.5–45.4 °C. Whether the
+vertical lines change with the level is the owner's observation; not reported yet.
+
+**Why the earlier audio boots died (E059):** the saved log of the `sound-manual` boot
+(`/boot/pf/prev`, copy in `dumps/raw/boots-2026-10-13/`) shows the OOM killer at 838 s with **622 processes
+named `omarchy-audio-o…`** (Omarchy's `omarchy-audio-output-*` scripts), swap full. So user space ran out
+of memory; the kernel audio drivers did not hang the boot. The trigger of the storm is not identified.
+At that time the PCM returned I/O errors and `pipewire-pulse` was not installed (`pactl` had no server).
+With both fixed (below) there was no storm in three boots (process count 150–210, zero such scripts).
+Also: that label masked `greetd.service`, which this frame does not use (the desktop is `pf-hyprland`).
+
+**Playback I/O error — cause found.** Control first: modules loaded by hand (`sun6i-dma`, `sun4i-i2s`,
+`sun8i-codec`, `snd-soc-simple-card`), card `sun8i-a33-audio` registers, `aplay -D hw:0,0 /dev/zero` →
+`write error: Input/output error` (the E059 symptom). Then `AIF1 Slot 0 Digital DAC Playback Switch` on
+(plus `AIF1 DA0 Playback Volume` 160 = 0 dB): the PCM runs, `hw_ptr` moves 49,000 frames in 1 s at 48 kHz.
+The codec is the clock master; with the DAC path closed, DAPM keeps its clocks off and the interface gets
+no bit clock. The research agent found the same in the source (`sun8i-codec.c`: the switch has no default).
+The kernel line "using zero-initialized flat cache" shows at each codec probe; no effect seen.
+
+**Speaker:** tone on the HP output + **PH09 high** (GPIO 233, `gpioset -c gpiochip1 233=1`) → the owner
+heard the beeps. PH09 high for 6 s did not disturb the SD card or the system. The E059 note "a PH09 hog
+lost the SD root" is not explained and was not repeated (no hog used).
+
+**Microphone: none found.** DTB with capture routes (`ADCL`←`Left ADC`, `ADCR`←`Right ADC`,
+`MIC1`/`MIC2`←`Mic`←`MBIAS`/`HBIAS`); DAPM showed MBIAS, HBIAS, both mic amplifiers and the ADC "On".
+Speaker playing 1 kHz, amplifier on, both mic switches on, boost 7/7, ADC gain 7/7: tone level 0.2 counts,
+RMS 33 counts (noise). Line In: 1 count. A first run that showed a full-scale tone was wrong: I had
+switched on `AIF1 Slot 0 Digital ADC Capture Switch`, which is a digital loopback of the playback data
+(the real ADC switch is `AIF1 Data Digital ADC Capture Switch`). Tool: `scripts/wav-tone-level.py`.
+Limit: this excludes a microphone on MIC1, MIC2 and Line In of the codec; nothing else was tested.
+
+**Desktop audio:** `wireplumber` had no ALSA plugin ("PipeWire's ALSA SPA plugin is missing"). Installed
+`pipewire-audio`, `pipewire-alsa`, `pipewire-pulse` (and `libgpiod` for the tests). PipeWire then lists the
+sink "Built-in Audio Stereo"; `pw-play` plays through the speaker. The stock kernel has no
+`simple-amplifier` driver, so `pf-speaker-amp.service` (root, `port/frame/pf-speaker-amp`) holds PH09 high
+while the playback PCM runs and 2 s more (sysfs GPIO 233, poll 4 Hz, no DT claim of the pin).
+Mixer state: `alsactl store`; copy in `port/frame/asound.state`.
+A dead input ("Built-in Audio Stereo" source) still shows, because the card has a capture PCM.
+
+**Final boot:** label **`full-audio`** = `full-bluetooth` DTB + `pf1007l-accelerometer.dtso` +
+`pf1007l-audio-speaker.dtso` → `/boot/dtbs/sun8i-a33-pf1007l-audio.dtb` (SHA-256 `7a381572…`). Unattended
+boot: no failed units, sound card at boot, switch restored "on", Wi-Fi connected, chime audible path
+(`pw-play` exit 0, amplifier pin 1). It is now the default; rollback: `sudo pf-bootsel full-bluetooth`.
+`port/frame/install-audio-rotate.sh --build-only` on the frame gives a byte-equal DTB; its `--activate`
+path as a whole was not run.
+
+**Auto-rotate:** `hyprctl eval` with `hl.monitor{…}` + `hl.config{input.touchdevice}` rotates live (tested
+3→1→3). `pf-autorotate` (user service) reads the SC7A20 at 2 Hz. Measured: upright landscape
+x ≈ −1000 → monitor 3 / touch 6. Derived, not yet seen by the owner: x ≈ +1000 → monitor 1 / touch 4;
+portrait rows (y ≈ ±1000 → 0/5 and 2/7) are a guess with a 50 % chance for the direction.
+
+**Light sensor / front hole (agent, from the full eMMC backup + web):** the stock firmware never loaded a
+light-sensor driver on this unit (`ls_used = 0`; `sw-device.ko` skips the scan; `ltr_501als.ko` refuses to
+register with that flag; no insmod line). The seller text and the family manual call the front item
+"Light Sensor"; `build.prop` has `ro.es_frame.auto_brightness=1`; the factory test file says
+"Lightsensor OK" (a manual button press). Camera: all camera insmods commented out, `vip_used = 0`,
+`ro.es_frame.video_call=0`. No IR section in the fex. Motion sensor: the app needs
+`/sys/class/humansensor/sleepmode`, which nothing in this firmware creates.
+**Device tests today:** with the vendor rails ELDO1 2.8 V and DLDO4 1.8 V forced on
+(`pf1007l-vendor-rails.dtso`, both read "enabled"), I2C bus 1 still shows only 0x19 and bus 0 only 0x40.
+PB07 (the vendor light-sensor interrupt pin) follows the internal pull-up and pull-down, so it has no
+external pull-up; PB06 (accelerometer interrupt, chip present) does the same, so this control does not
+separate "no chip" from "pin idle". Not scanned: I2C bus 2 (PE12/PE13, the camera connector).
+Verdict: no light sensor answers on this unit; a physical look into the hole is the next cheap test.
+
+**No eMMC write.** Private copies: `dumps/raw/boots-2026-10-13/`, `dumps/raw/audio-2026-10-13/`.
+
+## 2026-10-13 — E063: Sensor hunt — the light sensor is analog on LRADC0 (vendor code); no sound on the mic inputs; FCC ID
+
+**Event first:** start 23 (`full-audio`, backlight 10) has log lines up to 64 s and no shutdown line. My
+last good SSH command was about 2–3 min after that boot; the next one timed out, the USB gadget was gone
+and the frame was not on Wi-Fi. The owner then replugged the cable. Cause not known: power drop at full
+backlight, a hang, or a pulled cable. Precaution: backlight set to 6.
+
+**Light sensor (firmware agent, disassembly of the stock modules) [VERIFIED in the binaries, not yet on
+the device]:** the stock light sensor is not an I2C chip. `sunxi-keyboard.ko` (loaded by `init.sun8i.rc`)
+registers an input device named `lightsensor`, sets the A33 LRADC control register (0x01c22800) to
+`0x00c00041` and, from a timer, reports `LRADC_DATA0` (0x01c2280c, 6 bits) as `ABS_MISC`. The Android
+light HAL reads exactly that event, and the framework brightness table uses thresholds 10…59 (fits 0…63).
+The `[ls_para]` I2C keys in the fex are template leftovers. Only one board config exists in the eMMC
+image (sector 40144), equal to `dumps/raw/script.bin`. My E062 line "stock Android never loaded a driver
+for it" was wrong; it came from the first agent report, which looked only at the I2C route.
+The vendor U-Boot env also uses the LRADC for recovery/fastboot keys (values 16–19 and 2–8).
+
+**Device readings so far:** mainline leaves the LRADC at ctrl `0x02000141`. `LRADC_DATA0` read 63 for
+2.5 min (one sample each 12 s; the logger was slow because the PMIC register dump goes over RSB), then 61
+at the moment the accelerometer showed the frame being moved. At 20 Hz it stayed 61 for 45 s, and 61 for
+30 s more after I wrote the vendor value `0x00c00041` through `/dev/mem`. I asked the owner to cover and
+light the hole in these windows but have no confirmation that they did. **Not decided.**
+Now on the frame's screen: `kernel/tools/pf-hunt-live.py` (light value + mic peaks, log in
+`/tmp/pf-hunt-live.log`) for the owner to try by hand.
+
+**Microphone:** label `lab` with `pf1007l-sensor-hunt.dtso` (capture routes + I2C2). 150 s recording,
+left = MIC1, right = MIC2, boost 6/7, ADC gain 5/7: RMS 7.5 counts and peak-to-peak under 80 counts in
+every 5 s block after the start beep. No clap is visible, but I have no confirmation that the owner
+clapped. Vendor code (agent): main mic = MIC1 + MBIAS, boost 7; headset mic = MIC2 + HBIAS; no GPIO or
+regulator for a mic. The factory result file is no evidence either way: the MIC test is in the enabled
+list but was not run (E062 said the factory "did not expect one"; that was too strong).
+
+**I2C bus 2 (PE12/PE13):** enabled in the test DTB; every transfer ends with "I2C bus locked". The lines
+are not pulled up, so nothing can be scanned there as it is.
+
+**Web agent:** FCC ID **2AW9M-PF1007** (Shenzhen Efercro, grant 2026-06-28; the Humblestead name is not in
+the filing, so the link is likely, not proven). Internal photos, external photos and the manual are
+confidential until **2026-12-25**; schematics stay confidential. No teardown or board photo of a PF1007L
+was found. The family manual (PF1006) names one sensor, "Light Sensor" (item 4, a small hole at the
+bottom left of the bezel), and no microphone, camera or IR receiver.
+
+**No eMMC write.** Data: `dumps/raw/hunt-2026-10-13/`.
+
+## 2026-10-13 — E064: Light sensor proven; the memory storm is the light sensor read as a volume key; auto-brightness
+
+**Light sensor [VERIFIED on the device, owner + log]:** with the LRADC in the vendor mode (`0x00c00041`
+written through `/dev/mem`) the live view (`kernel/tools/pf-hunt-live.py`) shows `LRADC_DATA0` = 60–62 in
+the lit room and **0–2 with the hole covered** (7–14 when partly covered). The owner saw it go to 0.
+In E063 the value had looked stuck only because nobody covered the hole in those windows.
+
+**Root cause of the `omarchy-audio-output-*` storm (E059, E062; probably also the load-550 wedge of
+E056):** the board DTS inherits the reference tablet's `&lradc` node with two "keys" on that pin
+(Volume Up at 200 mV, Volume Down at 400 mV). The pin is the light sensor. When the light level puts the
+voltage in a key band, the kernel reports a volume key held, Hyprland repeats the key binding, and each
+repeat starts `omarchy-audio-output-volume lower`. Caught live while the owner covered the hole:
+27–62 such processes at a time, parent PID 1 or Quickshell, process count 184 → 279, load average 9.7.
+After `echo 1c22800.lradc > …/sun4i-a10-lradc-keys/unbind`: zero, and it stayed zero.
+So a dark room could take the frame down. The storm does not depend on audio at all; my E062 guess
+(I/O error + missing `pipewire-pulse`) was wrong about the trigger.
+**Fix, three layers:** (1) `/etc/modprobe.d/pf1007l-lradc.conf` blacklists `sun4i_lradc_keys` for every
+boot label (`port/frame/pf1007l-lradc.conf`, installed by `apply.sh`); (2) `kernel/dts/pf1007l-light-sensor.dtso`
+disables the `lradc` node in the `full-audio` DTB (new SHA-256 `c2693076…`, byte-equal to the installer's
+build; old file kept as `…audio.dtb.before-light`; **not booted yet**); (3) the driver is unbound in the
+running boot.
+
+**Auto-brightness:** `port/frame/pf-auto-brightness` (root service, enabled) reads the two LRADC registers
+4 times a second, takes the median of 2 s, uses the vendor thresholds 10/17/24/31/38/45/52/59 and moves
+the backlight one level at a time. Levels 1…8 of 10 (capped at 8 until a long run at 10 has passed, see
+the E063 drop-out). Seen: light 60 → backlight 6 → 8. The owner's view of the dimming is not reported yet.
+
+**Microphone, prompted test:** `kernel/tools/pf-mic-test.py` runs full-screen on the frame (quiet /
+get ready / NOW, live bars, verdict, repeats). Runs so far: quiet 91–105 counts peak-to-peak, action
+90–109 → "nothing heard" in every round. No confirmation yet that the owner did the actions in those runs.
+
+**Speech-to-text (research agent, not measured here):** Whisper `tiny.en` took about 18 s for one
+utterance on a Pi Zero 2 W in 32-bit mode; estimate 20–50 s on the A33. A streaming engine is the
+candidate: `sherpa-onnx` has `linux_armv7l` wheels up to Python 3.14 and a 20M-parameter English
+streaming model (41 MB int8); estimated real-time factor 0.4–0.8 on 4× A7 (proxy: an 8.8M model on a
+4× A7 RV1126 measured 0.37–0.49). Fallback: Vosk small English (armv7l wheel). Typing: `wtype`.
+The blocker is the missing microphone; a network microphone (Mac or phone) needs no hardware.
+
+## 2026-10-13 — E065: Is the microphone path set up correctly? Register check and a positive control
+
+**Question (owner):** are we sure that Linux connects to the microphone correctly?
+
+**Register check:** analog codec registers read from `/sys/kernel/debug/regmap/sun8i-codec-analog.0-adda-pr`
+during a capture with both mic switches on: `0x0a = f0` (MIC2 amplifier on, boost 7), `0x0b = df` (HBIAS,
+MBIAS, MIC1 amplifier on, boost 7), `0x0c = 0x0d = 60` (MIC1 and MIC2 into both ADC mixers), `0x0f = c3`
+(both ADCs on). The vendor kernel's "main mic" routine sets the same bits (MIC1 amplifier, boost 7, MBIAS;
+agent disassembly, E063) and needs no GPIO or regulator.
+
+**Positive control (silent, amplifier service stopped):** DAC 1 kHz tone → output mixer → ADC
+(`Mixer Capture Switch`, mics off): the capture holds the tone (Goertzel 2,738 / 2,963 counts, peak
+±22,700). Same converter, same digital route, mics on, no loopback: tone 0.1, RMS 17 counts.
+So the converter and the capture route work; nothing arrives on the MIC1 and MIC2 pins.
+Side note: a capture that starts after the playback stream has stopped gave an I/O error once; not examined.
+
+**Prompted test so far:** 34 rounds on the frame's screen, highest "action" peak 109 counts against a quiet
+level of 91–105; zero "HEARD". Whether the owner acted in those rounds is not confirmed.
+
+**Not tested:** the codec's PHONE inputs (no mainline control; the vendor "main mic" code does not use
+them), the MBIAS voltage itself (needs a meter), and the board (case not opened).
+
+## 2026-10-13 — E066: FCC filings of the maker — sister boards have an empty "MIC" footprint and an "ALS" lead footprint
+
+**Source:** agent download of the public FCC exhibits of grantee 2AW9M (Shenzhen Efercro); files, URLs and
+hashes in `dumps/raw/fcc/README.md` (git-ignored). I looked at the two key crops myself.
+
+- **2AW9M-PF1007** (this frame's family): the 17 public PDFs are radio documents; no text about a
+  microphone, camera or sensor. Internal and external photos and the manual stay hidden until 2026-12-25.
+- **2AW9M-PORTRAIT** (2022, 9", A33 + AXP223, board `ZN789_MB_V2.6`): two bare solder pads marked
+  **"MIC +"** at the board edge next to the LCD connector; nothing fitted. Also a bare 3-pad "SENSOR"
+  footprint, "IR" pads, a camera connector with no cable.
+- **2AW9M-PLUS** (2022, 9.7", A33, board `ZX691_MB_V1.3`): bare **"MIC +"** pads next to "SPK1"; an
+  **"ALS"** footprint with pads marked "VCC" and "SIG" (a two-wire analog light sensor on a lead, which
+  fits the LRADC finding of E064); UART pads RX/TX/GND on the back.
+- Neither board is the PF1007L (`PF1007L_MB_V1.0`); they are older relatives from the same maker. That
+  the PF1007L also has an empty MIC footprint is an inference, not seen.
+
+**Reading:** the maker's A33 frame boards carry a microphone position and ship it empty. That agrees with
+E062/E065 (the codec inputs are live and quiet). If the PF1007L has the same pads, an electret capsule
+can go there; the bias parts next to the pads may also be missing and must be checked on the board.
+
+## 2026-10-13 — E067: Deep microphone test — all analog inputs, bias toggle; one stray register write (mine)
+
+**Question (owner):** more software tests? What if a microphone exists with no hole for the sound?
+
+**Reasoning first:** a capsule inside the closed case still hears the frame's own speaker (same case) and
+taps on the case. The E062 test (speaker tone, amplifier on, maximum gain, 0.2 counts) already covers
+"a microphone with no hole".
+
+**Test (`kernel/tools/pf-mic-deep.py`, no person needed):** speaker plays 300/600/1000/2000/3500 Hz at
+`Headphone` 55/63 with the amplifier on; capture at 16 kHz; the two ADC mixer registers (0x0c, 0x0d) are
+set directly through the PRCM register port, because the PHONE inputs have no mainline control.
+Level of each tone against a control frequency (×1.37), counts:
+
+| Input | 300 | 600 | 1000 | 2000 | 3500 | Note |
+|---|---|---|---|---|---|---|
+| none (Line In only) | 4/5 | 5/7 | 7/8 | 9/12 | 12/8 | gains 7/7 |
+| MIC2 | 41/41 | 41/40 | 39/35 | **22/6** | **17/1** | boost 4, gain 3 |
+| PHONE pins | 16/16 | 16/15 | 15/14 | 12/8 | 4/4 | |
+| all inputs | 8/8 | 7/7 | 6/6 | 7/11 | 14/9 | |
+| MIC1 | — | — | — | — | — | run spoiled, see below |
+
+A capsule a few centimetres from that speaker gives thousands of counts. The only tone above its control
+is 2 and 3.5 kHz on MIC2 at about 20 counts, which rises with frequency and is absent in the "all" run;
+I read it as electrical crosstalk, not as a microphone (not proven).
+
+**Bias toggle (MIC1 selected, no sound):** MBIAS off/on (0x0b bit 6) moved the DC level by about 13 counts
+with no step or pop (peak-to-peak stayed about 20). A capsule fed from MBIAS gives a large step.
+The HBIAS/MIC2 toggle run is not valid (the path was powered down at that moment).
+
+**What went wrong:** (1) between the first and second run the mixer values fell back from boost 7/gain 7
+to 4/3 and the MIC1 run holds a full-scale pop; cause not identified (probably a mixer restore by the
+audio services). (2) My direct register writes raced with the kernel's own accesses: one value (0x14)
+landed in register 0x07 instead of 0x0b, and two recordings ended pinned at −32747. I cleared the stray
+bit (0x07: 14 → 04, checked through the kernel's regmap), the chime plays, and the frame was rebooted.
+**Rule:** no direct writes to the codec's analog registers while the kernel driver is live.
+
+**Verdict so far:** MIC1 (E062, E065: correct registers, 0.2 counts with the speaker playing), MIC2,
+Line In and the PHONE pins carry no microphone signal. Owner's new fact: a tiny hole in a corner of the
+case; not yet clear if it is the light sensor hole or another one.
+
+## 2026-10-13 — E068: Local speech-to-text on the frame — works; Moonshine v2 tiny is faster than real time
+
+**Question:** can a local model on the A33 (4× Cortex-A7, 1 GHz, 32-bit) turn speech into typed text?
+The frame has no microphone (E062–E067), so the sound comes from the Mac over the USB link
+(`scripts/mac-dictate.py` → TCP 10.55.0.1:5055 → `port/frame/stt/pf-dictate.py`). Only audio goes over the
+link; recognition runs on the frame.
+
+**Engine:** `sherpa-onnx` 1.13.8 from its PyPI `linux_armv7l` wheel for Python 3.14 (nothing compiled), in
+`~/.local/share/pf-stt/venv`. Models from the `asr-models` release of k2-fsa/sherpa-onnx (SHA-256 in
+`port/frame/stt/install.sh`).
+
+**Model comparison on the frame** (`pf-stt-eval.py`; 30 sentences = 5 texts × 6 macOS voices, made with
+`say`; raw results `dumps/stt/eval-2026-10-13.tsv`). Synthetic voices are a proxy, not real speech.
+
+| Model | Type | Word errors | Work per second of speech | RSS |
+|---|---|---|---|---|
+| Moonshine v2 tiny (2026-02, 30 MB) | whole piece | 6.2 % | **0.71 s** (3 threads) | about 100–140 MiB |
+| Moonshine v1 tiny int8 (2024-10) | whole piece | 4.1 % | 0.87 s | about 180 MiB |
+| Parakeet tdt_ctc 110M int8 | whole piece | 4.9 % | 1.07 s | about 200 MiB |
+| Streaming Zipformer 20M (2023) | streaming | 40.8 % | 1.45 s (2 threads) | about 100–160 MiB |
+
+The Italian voice reading English was the hardest for all: 26 % (v2), 15 % (v1), 18 % (Parakeet), 75 %
+(Zipformer). With 60 words for each voice these differences are not reliable.
+
+**Why the first try failed for the owner:** the streaming Zipformer (LibriSpeech only) typed
+"so turns out ran a full little model only beach afraid" for their sentence. It also drops the first
+words of a stream unless silence comes first, and its benchmark RTF was 1.23–1.29 with 2 threads
+(1.85 with 1, 1.7 with 3, 2.3 with 4); the `performance` governor changed nothing; the float encoder was
+slower (1.57).
+
+**Typing:** `wtype` makes the compositor load a new key map at each call: a 17 s clip finished 15.8 s
+after its end with typing and 5.6 s without. `ydotool` (user daemon, fixed virtual keyboard, `/dev/uinput`
+through group `input`) is fast. One sentence lost 19 characters in a row at 2 + 2 ms for each key; I could
+not repeat it in 14 forced tries; the likely cause is an overflow of the kernel event buffer while the
+compositor stalls. Now 8 + 4 ms: three runs of three sentences arrived complete (checked against a file).
+
+**Design now:** the whole-piece models decode at each pause of 0.6 s (or at the quietest point of the
+last 2.5 s when a piece reaches 8 s; Moonshine v2 in this sherpa-onnx fails on 10 s and more). Three
+sentences with pauses, 14.8 s: each sentence is typed about 4 s after its pause; all done 3.7 s after the
+end (v2). Parakeet: 8.0 s after the end. Moonshine v1: 4.6 s.
+User services `pf-ydotoold` and `pf-dictate` start at boot (verified by a reboot);
+`pf-dictate-model <name>` switches the model. `install.sh` was run on the frame.
+
+**Not tested:** the owner's own voice with the Moonshine or Parakeet models; a microphone on the frame;
+languages other than English; long use (memory, heat).
+
+## 2026-10-13 — E069: Fluid Speech Mini (owner's link) — best accuracy, about 18× too heavy for the frame
+
+**Model:** `FluidVoice-Labs/fluid-speech-mini-onnx` (Hugging Face, published 2026-10-13, CC BY 4.0): a
+Parakeet TDT 0.6B class model with weights packed at 2 and 4 bits (ONNX `MatMulNBits`), 302 MB; its card
+says about 500 MB of memory for a 15 s clip and ONNX Runtime 1.31.
+
+**On the frame: not run.** No `onnxruntime` Python package exists for armv7l; the `sherpa-onnx` wheel
+holds its own ONNX Runtime 1.28.2 library (it has the `MatMulNBits` operator), but sherpa-onnx cannot
+load this model layout (separate front end, `tokenizer.json`, 128 mel bins). A test on the frame needs a
+C-API wrapper or a converted model.
+
+**On the Mac (measured):** the model's own `transcribe.py` (read first: plain numpy + onnxruntime, no
+network or shell use), onnxruntime 1.31.0, 1 thread, the 30 test sentences of E068; CPU time, not wall time.
+
+| Model | Word errors | Mac CPU-seconds per second of speech | Peak memory |
+|---|---|---|---|
+| Fluid Speech Mini | **3.8 %** | 0.361 | 518 MB |
+| Parakeet 110M int8 (sherpa-onnx) | 5.4 % | 0.020 | — |
+| Moonshine v2 tiny (sherpa-onnx) | 6.9 % | 0.014 | — |
+
+Cost ratio on the Mac: 18× Parakeet 110M, 26× Moonshine v2. Scaled with the frame's measured numbers
+(Parakeet 1.07, Moonshine 0.71) the estimate for the frame is **about 18–20 s of work for each second of
+speech**, and the memory need is above what the frame has free (about 440 MiB). The scaling assumes the
+packed-weight kernels are not relatively slower on a Cortex-A7; they are probably slower.
+(The Mac word error rates differ a little from the frame's E068 values for the same models: 6.9 vs 6.2 %
+and 5.4 vs 4.9 %; different ONNX Runtime builds.)
+
+**Verdict:** not for this frame. It fits the "helper" design (the Mac or a phone runs the model) or a
+64-bit board with more memory.
+
+## 2026-10-13 — E070: Quality-of-life round 1 — shutdown 17 s, about 140 MiB more free memory, realtime audio
+
+**Baseline (read on the frame):** swap is zram 489 MiB `lzo-rle`, `vm.swappiness=100`, `page-cluster=0`;
+root ext4 `noatime`, scheduler `mq-deadline`; journal 62.6 MiB; boot 36.0 s (kernel 3.4 s + user space
+32.6 s; slowest: root device 8.0 s, `pf-basic` 6.2 s); `earlyoom` 1.9.0 is enabled; locale `C.UTF-8`;
+time zone Europe/London, NTP synchronized. Largest processes: quickshell 171 MiB, Hyprland 105,
+dictation model 102, udiskie 43, Xwayland 39.
+
+**Shutdown took about 90 s.** Journal of the previous boot: "session-5.scope: Stopping timed out. Killing"
+(processes `login` and `bash`: a login shell ignores SIGTERM). Fix: `TimeoutStopSec=8s` for session
+scopes and `DefaultTimeoutStopSec=20s` (`port/frame/system/`, installed by `apply.sh`). Measured: the USB
+link is gone 17 s after the reboot command.
+
+**Memory:** (1) `udiskie` removed: it mounts USB disks, and the frame has no USB host port in use
+(Omarchy's autostart still calls it; the call now fails with no effect). (2) `pf-dictate` loads its model at
+the first audio stream and drops it after 15 min idle; `scripts/mac-dictate.py` opens one empty connection
+at start to warm it up. First use costs about 12 s more. `MemAvailable` after boot: 563 MiB (before: 417–440).
+
+**Audio:** PipeWire logged "RTKit error: ServiceUnknown" at each start. `rtkit` installed
+(81 KiB); `rtkit-daemon` is active and the warning is gone.
+
+**Side buttons:** PB0 and PB1 (vendor `[gpio_keys]`, volume down / up) read 1 with pull-up and 0 with
+pull-down while idle: no external resistor. The wiring direction needs one press by the owner.
+
+**Running:** three research agents (feature audit on the frame, low-memory performance, touch use and apps).
+
+## 2026-10-13 — E071: Quality-of-life round 2 — broken Omarchy features fixed, touch close button, performance settings, slideshow
+
+**Method:** three research agents (feature audit read-only on the frame; low-memory performance; touch use
+and apps), then I applied the low-risk items and tested each one. Everything is in
+`port/frame/qol/qol.sh` (run on the frame; safe to run again). Rollback files end in `.before-frame-qol`
+or `.before-frame-port`.
+
+**Broken on the frame before, fixed and tested:**
+
+| Feature | Cause | Fix | Test |
+|---|---|---|---|
+| Screenshot | Omarchy calls `omasnap`: no ARM package | stand-in `~/.local/bin/omasnap` (grim, slurp, wl-copy) | PNG in `~/Pictures` |
+| All web-app entries | launcher falls back to Chromium: not on armv7h | `patch-webapp.py`: Firefox window | `omarchy-launch-webapp` → Firefox window in 25–28 s |
+| "Edit config" rows, editor key | default editor `nvim` cannot be installed | `defaults/editor` = `nano` | file written; menu row not clicked |
+| Close a window by touch | only SUPER+W or middle click | bar plugin `frame.controls` (✕) | same command closes a window |
+| Bluetooth pairing agent | tied to a target that never starts | wanted by `default.target` | active after reboot |
+| Power key | logind default = power off | `HandlePowerKey=ignore` | config read back; key not pressed |
+| Lock / screensaver timers (300 s / 150 s) | lock screen cannot show the touch keyboard | `idle` 0 / 0 in `shell.json` | value read back |
+| Suspend | targets were not masked | masked | `masked` |
+
+**Menu and bar:** 30 menu rows hidden with `"when": "false"` (updater rows, the two "refresh config" rows
+that overwrite the frame's rotation and bar, touchscreen off, suspend, lock, x86-only installs, Remove).
+Bar: removed the battery widget (the PMIC reports a battery that does not exist), agents, keyboard layout,
+update notice. After a shell restart the bar is empty for about 30 s, then complete (my first screenshot
+was too early).
+
+**Small tools installed:** hyprpicker, zbar, qrencode, mpv-mpris, ffmpegthumbnailer, gnome-themes-extra,
+woff2-font-awesome, galculator, tesseract + English data. MIME defaults: pictures → imv, media → mpv.
+
+**Performance settings (source-backed, effect on this frame NOT measured unless stated):**
+- sysctl: swappiness 180, watermark boost 0 / scale 125, vfs_cache_pressure 50, dirty limits 4/16 MiB.
+- earlyoom: prefers Firefox content processes, avoids Hyprland, Quickshell, PipeWire.
+- GPU clock fixed at 384 MHz (devfreq `performance`; it idled at 144 MHz). CPU minimum 648 MHz (highest
+  step at the lowest voltage). I/O scheduler `bfq`. Journal cap 64 MiB. Temperature after boot 51.7 °C.
+- Hyprland: ANR dialog off, `render.new_render_scheduling` on (tried live first: no fault), Xwayland off
+  (measured: the 40 MiB process is gone; no X11 client was in use), `GSK_RENDERER=cairo`.
+- Firefox: `frame.js` (2 content processes, no spare processes, smaller caches, AV1/VP9 off) and
+  `policies.json`. Measured with one `example.com` window: 8 processes, about 309 MiB RSS, window after
+  25 s; 444 MiB still available. Firefox needs more than 5 s to exit after its window closes.
+- `MemAvailable` idle after all changes: about 500–560 MiB at 1 min, 626 MiB after the Firefox test
+  (187 MiB in zram).
+
+**New functions:** `pf-slideshow` (mpv, full screen, menu rows "Photo frame"; tested with three
+pictures, RSS 84 MiB; a tap should stop it — not tested by touch). Night mode in `pf-auto-brightness`
+(screen off after 120 s of darkness, back with light or a touch): **off by default**; with a 10 s test
+timer the backlight went 1 → 0 in the dark room; the touch wake is not tested.
+
+**Prepared, not installed:** `kernel/dts/pf1007l-volume-keys.dtso` (needs one press of each button to
+confirm the wiring).
+
+**Not done, with reason:** `damage_tracking` back to 2 (needs the owner's eyes for the line artefacts);
+the third-party on-screen keyboard plugin (would replace the only working keyboard unattended);
+hyprgrass gestures (needs a cross-build; a plugin crash takes the compositor down); locale change
+(risk for no clear gain); syncthing (owner must choose the photo source).
+
+## 2026-10-14 — E072: First test with the owner's voice — pause detector fixed, Moonshine v1 now the default
+
+**Owner's test (Mac microphone → frame):** said "it turns out you can run a fully local text-to-speech
+model on the photo frame". Live result (Moonshine v2): "Turns out you can run a fully local text to speed." /
+"It's model on the." / "Of frame."; a first try stopped after "Turns out".
+
+**Cause:** the Mac microphone gave quiet sound (speech RMS 200–360, peaks 1,100–3,100 of 32,767; pauses
+RMS 40–80). The fixed pause threshold (RMS 250) took parts of the speech for silence and cut the sentence
+into pieces, which lose their context.
+
+**Same recording, whole sentence, on the frame:**
+
+| Model | Text | Decode time for 9.0 s |
+|---|---|---|
+| Moonshine v1 tiny | "Turns out you can run a fully local text-to-speech model on the photoframe." | 10.6 s |
+| Moonshine v2 tiny | "… text-to-speech model only for a frame." | 8.7 s |
+| Parakeet 110M | "… text to speech model on the photo frrame" | 13.2 s |
+
+Peak normalization (gain 5.1) changed v2's ending but not the others.
+
+**Fix:** the pause threshold now follows the stream (a quarter of the way from the 10th to the 90th
+percentile of the 0.1 s levels, at least twice the noise level); a pause must last 0.8 s; each piece is
+normalized before decoding; the maximum piece is 20 s for v1 and Parakeet (8 s for v2). Default model:
+Moonshine v1. The Mac level bar is now one short line (it wrapped in the owner's terminal).
+**Replay of the owner's recording through the live path:** one piece, exact text, typed 8.1 s after the end
+of the audio (live decode is slower than the bench: 9.3 s for a 5.4 s piece).
+
+## 2026-10-14 — E073: The "frame hangs" cause — the AIC8800 Wi-Fi driver; dictation status in the bar; damage tracking 2 on test
+
+**Event:** the owner opened Firefox; nothing appeared. SSH over USB stopped at the banner; the USB serial
+shell answered twice, then stopped too. Many processes were in state D (`sshd-session [rexeced]`,
+Firefox content process). The kernel still answered ping. The owner replugged the frame.
+
+**Cause (journal of that boot):** the Wi-Fi driver's transmit thread `aicwf_bustx_thr` was blocked from
+about uptime 34,318 s in `aicwf_sdio_flow_ctrl → sdio_readb → mmc_io_rw_direct` (an SDIO read that never
+completed), about 10 minutes **before** Firefox was started. Then NetworkManager, `iw`, a kworker and
+`sshd-session` blocked behind it (`__mmc_claim_host` from `aicwf_sdio_writeb`; the network stack held).
+Wi-Fi power saving was on (`iw`: "Power save: on"; driver parameter `ps_on=Y`). It is not the SD card:
+I suspected the new BFQ scheduler first, and that was wrong. The earlier unexplained drop-outs (E063)
+may have had the same cause; not proven.
+**Fix:** Wi-Fi power saving off in NetworkManager (`wifi.powersave = 2`), live (`iw … power_save off`)
+and in the driver for the next boot (`ps_on=0`); files in `port/frame/system/`, added to `qol.sh`.
+**Test:** 3-minute download over `wlan0`: 71 MB at about 0.73 MB/s, no blocked task. One test is not proof.
+Not done: an automatic recovery (for example `kernel.hung_task_panic`) if the driver hangs again.
+
+**Dictation feedback (owner: "no feedback, unintuitive"):** `pf-dictate` now writes its state
+(`loading`, `listening`, `busy`, last text) to `$XDG_RUNTIME_DIR/pf-dictate.state` and sends the same JSON
+lines back to the Mac. New bar widget `frame.dictation` (red mic + "REC", "…" while transcribing,
+"loading"); the Mac script prints "transcribing …" and "typed: …" lines. Simulated run with the owner's
+recording: reports arrived in order; the bar showed the red "REC" (screenshot
+`dumps/boots/2026-10-12-first-picture/dictation-bar-rec.png`); text 5.3 s after the end of the sound.
+Pause for a piece 0.6 s, longest piece 6 s, warm-up decode after loading.
+
+**Speed (owner's 9 s sentence, warm, on the frame):** Moonshine v1 10.5–11.4 s with 3 threads,
+11.4–12.6 s with 4; v2 8.7–9.3 s with 4. True streaming with acceptable accuracy is not possible on this
+CPU with the models tested (E068).
+
+**Screen lines:** visible in the owner's video (thin vertical stripes and a sideways seam in the text).
+No display error in `dmesg`. `debug.damage_tracking` set to 2 live (not saved) for the owner's A/B look.
+
+## 2026-10-14 — E074: Unexplained reset at 09:17; crash logging set up
+
+**Event:** the screen went black with no action by the owner. Journal of that boot (08:57:39–09:16:52)
+ends with normal lines (log copy at 1,088 s); no error, no shutdown. Next boot 09:19:28. No panic text
+can reach the journal, and the kernel has no pstore. Candidates: a hard kernel freeze, after which the
+hardware watchdog resets the board (U-Boot arms it, 16 s, `nowayout=1`; the kernel feeds it itself,
+`WATCHDOG_HANDLE_BOOT_ENABLED=y`, nothing in user space holds `/dev/watchdog0`), or a power drop.
+The D-state hang of E073 did not reset the board, so this was a different, harder failure. Unproven:
+the Wi-Fi driver for both.
+
+**Logging for the next event:** `console=ttyGS0,115200` added to the `full-audio` entry (backup
+`extlinux.conf.before-serial-console`); `/proc/consoles` lists `ttyGS0`; a test line written to
+`/dev/kmsg` reached the Mac. Two loggers run on the Mac (`dumps/raw/stability/`, git-ignored):
+`serial-logger.sh` records the serial port across reboots, `health-logger.sh` records ping, SSH,
+uptime, load, memory, Wi-Fi state, D-state count and temperature each minute.
+Wi-Fi power saving is still off after the reboot (`iw`: off; `ps_on=N`).
+`debug.damage_tracking` is back to 0 after the reboot (the value 2 was live only).
+
+## 2026-10-14 — E075: Power path is the main suspect for the silent restarts; extra power draw taken back
+
+**Owner's setup:** the frame gets power and data from a USB dongle on the laptop; the dongle itself is fed
+by a charger (pass-through). The frame has no battery: any short dip in its 5 V restarts it at once,
+with no log. That fits the 09:17 restart (E074) and probably the 19:41 drop-out (E063).
+**Vendor setting:** the stock config switches the PMIC's USB input limits off (`pmu_usbcur_limit = 0`,
+`pmu_usbvol_limit = 0`); under Linux `axp20x-usb` reports `input_current_limit` 900 mA. The PMIC also
+reports the AC input as online, so the board may feed both inputs from the same 5 V (not checked on the
+board). Not changed.
+**Taken back (lower draw first):** GPU clock governor back to `simple_ondemand` (idle 144 MHz; E071 had
+held it at 384 MHz) and the CPU minimum back to 120 MHz; the script and the udev rule are updated.
+**Monitoring over Wi-Fi:** `Host frame-wifi` in the private SSH config (same host key); the health logger
+tries USB, then Wi-Fi, and marks a falling uptime as "RESTARTED". This allows a test on the frame's own
+5 V 2 A wall adapter, with no USB link.
+
+## 2026-10-14 — E076: "No website opens, everything slow" = Firefox fills the memory; lighter Firefox; partial repaint saved
+
+**Measured during the owner's Firefox use (wall adapter, after the power move):** Firefox 253 MB +
+"Privileged Content" 123 MB + "WebExtensions" 88 MB; 233 MB available, zram swap 371 of 488 MB used;
+memory pressure "full" avg60 6.9 %, CPU pressure "some" avg60 22.6 %; kswapd busy; 64.8 °C and rising.
+The network was fine: Wi-Fi −39 dBm, 65 Mbit/s; `curl https://example.com` 200 in 1.0 s.
+**Changes:** `frame.js` now also turns off the new-tab page (its own process), runs the built-in
+extensions in the main process (`extensions.webextensions.remote=false`), and turns off Pocket, autofill,
+sponsored suggestions and the AI chat. Effect needs a Firefox restart; not measured yet.
+`debug.damage_tracking = 2` saved in `looknfeel.lua` (backup `.before-damage2`) and live: the lines stayed
+with full repaint (0), which costs much more memory bandwidth, and a memory-starved display controller
+is one likely source of such lines (not proven).
+**Claude Code:** the 32-bit payload builds on the Mac (`port/frame/claude/build-on-mac.sh`, version
+2.1.270, 25 MB tarball, git-ignored); not installed on the frame yet.
+
+## 2026-10-14 — E077: YouTube with sound plays on the frame (mpv); IPv4/IPv6 mismatch fixed; swap size
+
+**First try:** `pf-youtube` failed. YouTube no longer gives format 18 for the test video; video and
+audio come as separate streams. After the format fix, mpv got HTTP 403 from googlevideo. Test: a stream
+link requested over IPv4 downloads over IPv4 (206), one requested over IPv6 downloads over IPv6 (206);
+yt-dlp had asked over IPv6 and mpv's downloader connected over IPv4. Fix: `pf-youtube` passes
+`force-ipv4` to yt-dlp, and `/etc/gai.conf` prefers IPv4 (backup `.before-ipv4` if the file existed).
+yt-dlp warns that no JavaScript runtime (deno) is installed; extraction still worked.
+**Result (Big Buck Bunny, 480p H.264 + AAC 44.1 kHz, owner heard it):** picture and sound 17 s after the
+start; A-V offset 0.000–0.004 s; 288 dropped frames in 33 s (the 480p stream of this upload is a 60 fps
+source); mpv 175 % CPU (of 400 %), RSS 115 MB; 57 °C. `pf-youtube` now prefers streams of 30 fps or less.
+`vo=gpu` runs in "dumb mode" (no high-bit-depth FBOs on GLES 2).
+**Swap:** zram from systemd's generator default (no config file): half of the RAM, 489 MB, `lzo-rle`;
+measured 167.9 MB stored in 58 MB (2.9 : 1). Prepared `port/frame/system/zram-generator.conf`
+(`zram-size = ram`); not installed yet.
+
+## 2026-10-14 — E078: YouTube search app; larger compressed swap installed
+
+`pf-youtube-search` (foot + fzf): type a search; yt-dlp `ytsearch15` with `--flat-playlist` lists
+duration, channel and title (a search took 20 s on the frame, first test "lofi hip hop": 10 results,
+live streams show as "LIVE"); a pick plays through `pf-youtube` (mpv, full screen, sound); closing the
+video returns to the list. Entries: app launcher ("YouTube", `pf-youtube.desktop`) and the menu row
+Photo frame → YouTube. Installed by `qol.sh`. Not yet tested by the owner's touch: whether taps reach
+fzf inside foot as clicks is unconfirmed; arrows + Enter work by design.
+`/etc/systemd/zram-generator.conf` installed (`zram-size = ram`); takes effect at the next boot.
+
+## 2026-10-14 — E079: "Normal YouTube" = the website in Firefox + playback in mpv (ff2mpv)
+
+Packages checked for armv7h: no FreeTube, Minitube, SMTube, pipe-viewer, Tartube; `ytfzf` 2.6.2 and
+`chafa` exist (terminal thumbnails; not installed). Chosen: the Firefox add-on **ff2mpv** (AMO, MIT,
+`ff2mpv@yossarian.net`, 6.0.0) installed by `policies.json` (`ExtensionSettings`, `force_installed`),
+with the frame's own native-messaging helper `pf-ff2mpv-host` (no upstream script): YouTube links go to
+`pf-youtube` (480p H.264, IPv4, full screen), other links to `mpv --fs`. Native-host manifest:
+`~/.mozilla/native-messaging-hosts/ff2mpv.json`. Helper test: a framed JSON message got the answer
+`{}` and exit 0. Not tested yet: the add-on install on the next Firefox start, and the owner's click.
+
+## 2026-10-14 — E080: Web view mode — Wes Bos's dashboard full screen on the frame
+
+Wes Bos's `dashboard/` (Vite, mock data; his frame shows it in a WebView kiosk app) builds on the Mac
+(`vite build`: 176 KB). His repository has no licence file, so the built files go only to the owner's
+frame (`~/.local/share/pf-dashboard`), not into this repository. `pf-dashboard.service` serves them on
+127.0.0.1:8085 (Python `http.server`). `pf-webview` starts Firefox with its own profile in `--kiosk`
+mode (app id `pf-webview`), closes a normal Firefox first, and can start at login (`pf-webview boot
+on [URL]`; autostart line in `autostart.lua`). Exit: power key → system menu → "Close web view"
+(menu row shown only while it runs), or Menu → Photo frame → Web view to start it.
+**Measured:** kiosk window 28 s after the start; the dashboard rendered fully (screenshot
+`dumps/boots/2026-10-12-first-picture/webview-dashboard.png`); Firefox total RSS 308 MB; 464 MB
+available. Not tested: the exit by the power key, and boot mode.
+
+## 2026-10-14 — E081: Owner's checks — no volume buttons; upside-down rotation did nothing
+
+The owner reports that this frame has **no volume buttons** (the vendor config's `[gpio_keys]` PB0/PB1
+and the family manual's Volume +/− do not apply to this unit). The untested overlay
+`kernel/dts/pf1007l-volume-keys.dtso` is removed.
+The owner turned the frame upside down and the screen did not rotate. `pf-autorotate` was active.
+A read a little later gave x = −963, y = 96, z = 407 (the upright values), so the frame may have been
+upright again by then. A 10-minute log of the three axes and the monitor transform is running on the
+frame (`/tmp/accel.log`) for a second try. Not solved yet.

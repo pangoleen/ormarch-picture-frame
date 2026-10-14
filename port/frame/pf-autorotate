@@ -1,0 +1,79 @@
+#!/bin/bash
+# pf-autorotate: rotate the Hyprland output and the touch panel with the frame.
+#
+# Reads the SC7A20 accelerometer (IIO, about 1024 counts for 1 g) two times a
+# second. When the frame stands in a new orientation for 1.5 s, it sets the
+# monitor transform and the matching touch transform with `hyprctl eval`.
+# A frame that lies flat keeps its last orientation.
+#
+# Measured on the PF1007L (E050, E062):
+#   stand upright, landscape:   x = -1000  -> monitor 3, touch 6
+#   landscape, turned 180 deg:  x = +1000  -> monitor 1, touch 4
+# The two portrait rows are set in ORIENT_YPOS / ORIENT_YNEG below.
+#
+# Stop it for one session:  systemctl --user stop pf-autorotate
+# Lock the orientation:     touch ~/.config/pf-autorotate.lock
+set -u
+
+OUTPUT=DSI-1
+THRESHOLD=600       # counts on the main axis
+CROSS_MAX=450       # counts allowed on the other in-plane axis
+NEED=3              # equal readings in a row (x 0.5 s)
+# "monitor-transform touch-transform"
+ORIENT_XNEG="3 6"
+ORIENT_XPOS="1 4"
+ORIENT_YPOS="0 5"
+ORIENT_YNEG="2 7"
+LOCK=${XDG_CONFIG_HOME:-$HOME/.config}/pf-autorotate.lock
+[ -r "${XDG_CONFIG_HOME:-$HOME/.config}/pf-autorotate.conf" ] && . "${XDG_CONFIG_HOME:-$HOME/.config}/pf-autorotate.conf"
+
+export XDG_RUNTIME_DIR=${XDG_RUNTIME_DIR:-/run/user/$(id -u)}
+
+dev=""
+for d in /sys/bus/iio/devices/iio:device*; do
+	[ -r "$d/name" ] && [ "$(<"$d/name")" = sc7a20 ] && dev=$d
+done
+[ -n "$dev" ] || { echo "no sc7a20 accelerometer (is the device tree node present?)" >&2; exit 1; }
+
+tick=$XDG_RUNTIME_DIR/pf-autorotate.tick
+[ -p "$tick" ] || mkfifo "$tick"
+exec 3<>"$tick"
+
+apply() {
+	local sig scale
+	sig=$(ls -t "$XDG_RUNTIME_DIR/hypr" 2>/dev/null | head -1)
+	[ -n "$sig" ] || return 1
+	export HYPRLAND_INSTANCE_SIGNATURE=$sig
+	scale=$(hyprctl monitors 2>/dev/null | awk '/scale:/ {print $2; exit}')
+	[ -n "$scale" ] || return 1
+	hyprctl eval "hl.monitor({ output = \"$OUTPUT\", mode = \"preferred\", position = \"auto\", scale = $scale, transform = $1 }); hl.config({ input = { touchdevice = { transform = $2, output = \"$OUTPUT\" } } })" >/dev/null
+}
+
+current=""
+candidate=""
+count=0
+while :; do
+	x=$(<"$dev/in_accel_x_raw")
+	y=$(<"$dev/in_accel_y_raw")
+	ax=${x#-}
+	ay=${y#-}
+	want=""
+	if ((ax > THRESHOLD && ay < CROSS_MAX)); then
+		((x < 0)) && want=$ORIENT_XNEG || want=$ORIENT_XPOS
+	elif ((ay > THRESHOLD && ax < CROSS_MAX)); then
+		((y > 0)) && want=$ORIENT_YPOS || want=$ORIENT_YNEG
+	fi
+	if [ -n "$want" ] && [ ! -e "$LOCK" ]; then
+		if [ "$want" = "$candidate" ]; then
+			count=$((count + 1))
+		else
+			candidate=$want
+			count=1
+		fi
+		if ((count >= NEED)) && [ "$want" != "$current" ]; then
+			# shellcheck disable=SC2086
+			apply $want && current=$want
+		fi
+	fi
+	read -r -t 0.5 -u 3 _ || true
+done

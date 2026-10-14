@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=YouTube
+Comment=Search YouTube and play videos with sound (480p, mpv)
+Exec=foot -T YouTube -f "monospace:size=13" pf-youtube-search
+Icon=multimedia-video-player
+Categories=AudioVideo;Video;
+Terminal=false

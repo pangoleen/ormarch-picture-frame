@@ -1,0 +1,7 @@
+{
+  "name": "ff2mpv",
+  "description": "PF1007L: play the page in mpv (pf-youtube for YouTube)",
+  "path": "/home/frame/.local/bin/pf-ff2mpv-host",
+  "type": "stdio",
+  "allowed_extensions": ["ff2mpv@yossarian.net"]
+}

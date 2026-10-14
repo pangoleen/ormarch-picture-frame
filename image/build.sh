@@ -110,6 +110,7 @@ step_uboot() {
 		|| docker build -q -t pf1007l-uboot-build -f "$HERE/uboot/Dockerfile.uboot-build" "$HERE/uboot" >/dev/null
 	fresh_dir "$WORK/uboot"
 	uboot_src_tar | docker run --rm -i -e SOURCE_DATE_EPOCH="$UBOOT_EPOCH" \
+		-e PF1007L_WRITABLE_RECOVERY="${PF1007L_WRITABLE_RECOVERY:-0}" \
 		-v "$HERE/uboot":/u:ro -v "$WORK/uboot":/out pf1007l-uboot-build /u/build-in-container.sh
 	# The SPL must stay clear of the early stack (limit from Wes Bos's build-uboot.sh).
 	python3 -I - "$WORK/uboot/u-boot-pf1007l-L.bin" <<'EOF'

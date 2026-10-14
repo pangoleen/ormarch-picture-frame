@@ -1,0 +1,30 @@
+#!/bin/bash
+# YouTube on the frame: type a search, pick a result (tap or arrows + Enter), it plays full screen
+# with sound in mpv (pf-youtube). Close the video (the X button in the bar) to come back to the list.
+# Firefox is too slow for YouTube on this chip; mpv plays 480p H.264 (E077).
+y=$HOME/.local/yt-dlp-venv/bin/yt-dlp
+[ -x "$y" ] || { echo "Run pf-install-yt-dlp first."; read -r _; exit 1; }
+tab=$'\t'
+while true; do
+  clear
+  printf '\n  YouTube\n\n  Type what to search and press Enter (empty: close).\n  Keyboard: the keyboard button in the top bar.\n\n  Search: '
+  read -r query || exit 0
+  [ -z "$query" ] && exit 0
+  printf '\n  Searching (about 20 s) ...\n'
+  results=$("$y" --no-warnings --force-ipv4 --flat-playlist \
+    --print "%(duration_string)s|%(channel)s|%(title)s|%(id)s" "ytsearch15:$query" 2>/dev/null)
+  if [ -z "$results" ]; then
+    printf '  No results, or no internet. Press Enter.'; read -r _; continue
+  fi
+  while true; do
+    pick=$(printf '%s\n' "$results" | awk -F'|' -v t="$tab" '{
+        d = ($1 == "NA") ? "LIVE" : $1
+        printf "%-8s %-16.16s  %s%s%s\n", d, $2, $3, t, $4 }' |
+      fzf --delimiter="$tab" --with-nth=1 --reverse --no-sort --cycle \
+          --header="Tap a video (or arrows + Enter). Esc: new search." --prompt="Filter: ") || break
+    id=${pick##*"$tab"}
+    clear
+    printf '\n  Starting the video (about 15 s) ...\n  Close the video with the X in the top bar to come back here.\n'
+    pf-youtube "https://www.youtube.com/watch?v=$id" >/dev/null 2>&1
+  done
+done

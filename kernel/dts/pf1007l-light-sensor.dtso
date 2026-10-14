@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L: the light sensor is an analog part on the A33 key-voltage
+ * converter (LRADC0). The vendor module sunxi-keyboard.ko reads it; the board
+ * has no keys there. The mainline key driver would hold the converter in its
+ * own mode, so it stays off. pf-auto-brightness reads the converter (E063).
+ */
+
+/dts-v1/;
+/plugin/;
+
+&lradc {
+	status = "disabled";
+};

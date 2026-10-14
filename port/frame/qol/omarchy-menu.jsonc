@@ -1,0 +1,48 @@
+{
+  // PF1007L: hide the menu rows that cannot work on this frame or that would undo its setup.
+  // Entries merge per key with Omarchy's own menu (docs/menu.md); "when" is a bash condition.
+
+  // These two overwrite the frame's display rotation, touch mapping and bar layout with defaults.
+  "update.config.hyprland": { "when": "false" },
+  "update.config.shell": { "when": "false" },
+  "update.config.plymouth": { "when": "false" },
+  // The upstream updater is for x86 and aarch64 packages.
+  "update.omarchy": { "when": "false" },
+  "update.channel": { "when": "false" },
+  "update.themes": { "when": "false" },
+  "update.firmware": { "when": "false" },
+  "update.password.drive": { "when": "false" },
+  // This would switch off the only input device.
+  "trigger.hardware.touchscreen": { "when": "false" },
+  // No proven wake-up path; the lock screen cannot show the touch keyboard.
+  "system.suspend": { "when": "false" },
+  "system.lock": { "when": "false" },
+  "system.screensaver": { "when": "false" },
+  "trigger.toggle.screensaver": { "when": "false" },
+  // Tools with no armv7h package.
+  "trigger.share": { "when": "false" },
+  "trigger.capture.screenrecord": { "when": "false" },
+  "setup.direct-boot": { "when": "false" },
+  "setup.security": { "when": "false" },
+  "install.ai": { "when": "false" },
+  "install.service": { "when": "false" },
+  "install.development": { "when": "false" },
+  "install.editor": { "when": "false" },
+  "install.gaming": { "when": "false" },
+  "install.browser": { "when": "false" },
+  "install.webapp": { "when": "false" },
+  "install.terminal": { "when": "false" },
+  "install.tui": { "when": "false" },
+  "install.windows": { "when": "false" },
+  "install.aur": { "when": "false" },
+  "install.preinstalls": { "when": "false" },
+  "remove": { "when": "false" },
+
+  // Photo frame: full-screen slideshow of ~/Pictures/frame. One tap on the screen stops it.
+  "frame": { "icon": "\uf03e", "label": "Photo frame" },
+  "frame.start": { "icon": "\uf04b", "label": "Start slideshow", "action": "pf-slideshow start" },
+  "frame.stop": { "icon": "\uf04d", "label": "Stop slideshow", "action": "pf-slideshow stop" },
+  "frame.webview": { "icon": "\uf108", "label": "Web view (full screen page)", "action": "pf-webview start" },
+  "system.webview-close": { "icon": "\uf00d", "label": "Close web view", "action": "pf-webview stop", "when": "pgrep -f 'pf-webview/profile' >/dev/null" },
+  "frame.youtube": { "icon": "\uf16a", "label": "YouTube", "action": "foot -T YouTube -f monospace:size=13 pf-youtube-search" },
+}

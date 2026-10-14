@@ -1,0 +1,38 @@
+#!/bin/sh
+# claude-check-update — one JSON line: installed vs newest Claude Code version.
+#   {"cli":"claude","installed":"2.1.212","latest":"2.1.214","update_available":true}
+#
+# Contract shared by every Yumi-Lab/*-smartpi repo (<cli>-check-update): no sudo,
+# no side effects, fast; "latest"/"installed" are null when unknown (offline,
+# not installed). The Yumi AI Gateway polls this to light its update badge, then
+# runs install.sh (unified installer/updater) to actually update.
+#
+# Installed source of truth: the VERSION file written by install.sh.
+# Fallback (pinned npm install, or foreign install): `claude --version`, slow on
+# the H3 (~6 s) hence the generous timeout.
+# Newest version: resolved by the release lib install.sh puts next to VERSION, so
+# "latest" is exactly what install.sh would install (newest release, capped at the
+# repo's MAX_VERSION — see lib/claude-release.sh).
+
+LIB=/opt/claude-code/lib/claude-code
+installed=""
+if [ -r "$LIB/VERSION" ]; then
+  installed="$(head -1 "$LIB/VERSION" | tr -d '[:space:]')"
+fi
+if [ -z "$installed" ] && command -v claude >/dev/null 2>&1; then
+  installed="$(timeout 40 claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+fi
+
+latest=""
+if [ -r "$LIB/claude-release.sh" ]; then
+  # shellcheck source=lib/claude-release.sh
+  . "$LIB/claude-release.sh"
+  latest="$(claude_latest_version)"
+fi
+
+up=false
+[ -n "$installed" ] && [ -n "$latest" ] && [ "$installed" != "$latest" ] && up=true
+
+j() { if [ -n "$1" ]; then printf '"%s"' "$1"; else printf 'null'; fi; }
+printf '{"cli":"claude","installed":%s,"latest":%s,"update_available":%s}\n' \
+  "$(j "$installed")" "$(j "$latest")" "$up"

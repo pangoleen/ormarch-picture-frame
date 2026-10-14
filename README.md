@@ -23,20 +23,40 @@ backup before starting.
   file manager, image/video viewers, and standard Omarchy Bluetooth pairing.
 - Native Bluetooth LE over UART1. A mouse and keyboard have been paired on the
   tested frame. Classic Bluetooth is not verified.
+- The built-in speaker, through PipeWire. A small service switches the
+  amplifier pin while audio plays.
+- Automatic brightness from the light sensor behind the front hole.
+- Voice typing with a local speech model (Moonshine tiny through sherpa-onnx)
+  that runs on the frame. The sound comes from a Mac over the USB link, because
+  the frame has no microphone. See [the dictation page](docs/dictation.md).
+- Automatic rotation from the SC7A20 accelerometer. Only the upright landscape
+  position is verified; turning the frame upside down did not rotate the screen
+  in the owner's first test (under investigation).
+- YouTube with sound: a touch-friendly search app (`pf-youtube-search`), and
+  the normal website in Firefox with a "Play in mpv" button (ff2mpv). Playback
+  is 480p H.264 in mpv; Firefox itself is too slow for video on this chip.
+- Web view mode (`pf-webview`): one web page full screen with no browser
+  controls, optionally at every boot, like the kiosk app in Wes Bos's
+  photo-frame-dashboard (whose dashboard runs in it).
+- Photo slideshow (`pf-slideshow`), a touch button that closes the focused
+  window, a cleaned Omarchy menu and bar, faster shutdown, and low-memory
+  settings for Firefox and the kernel: `port/frame/qol/qol.sh`
+  (`docs/experiments.md`, E070–E080).
 
 ## Deliberate limits
 
-- The Agents button is present because it comes from Omarchy. Claude Code
-  cannot be installed on this frame: its current native Linux releases support
-  x64 and arm64, but not 32-bit armv7. The frame overlay reports that clearly
-  instead of attempting Omarchy's unavailable `mise` installer.
+- Claude Code has no official 32-bit ARM build. `port/frame/claude/build-on-mac.sh`
+  builds a payload on the Mac with the community compatibility layer of
+  Yumi-Lab/claude-code-smartpi (pinned in `port/third_party/`); it is not yet
+  tested on the frame. The payload is Anthropic software and is never committed.
+- 1 GB of RAM is the main limit: one Firefox page uses about 300–470 MB, so run
+  one heavy app at a time. Chromium, Electron apps and Neovim do not exist for
+  32-bit ARM.
 - This is a source-backed Omarchy installation, rather than the upstream x86
   package. The installer skips its package-only first-run routine and enables
   the frame services directly, avoiding repeating welcome/update notifications.
-- YouTube is supported through the tested 480p-or-lower H.264 path. The
-  installer adds `pf-youtube <URL>` and a pinned user-local extractor. The
-  speaker still needs its separate device-tree bring-up, so this currently
-  verifies video rather than frame audio.
+- No microphone was found on the codec inputs of the tested unit (FCC photos
+  of sister boards show an empty "MIC" footprint). See [the hardware page](docs/hardware.md).
 
 ## Reinstall path
 
@@ -80,6 +100,11 @@ desktop or Bluetooth change fails.
    `sudo wifi/install-uart-bluetooth.sh --activate` and reboot. The script
    keeps the original `full` label intact; rollback is `sudo pf-bootsel full`
    followed by `sudo systemctl disable --now pf-bluetooth-uart.service`.
+
+5. The speaker and automatic rotation are opt-in too. After Bluetooth works,
+   run `port/frame/install-audio-rotate.sh --activate` and reboot. It adds the
+   `full-audio` label and leaves `full-bluetooth` intact; rollback is
+   `port/frame/install-audio-rotate.sh --rollback`.
 
 Wi-Fi passwords, SSH keys, full storage backups, vendor firmware blobs, and
 generated images are excluded from Git. Enter Wi-Fi credentials locally in

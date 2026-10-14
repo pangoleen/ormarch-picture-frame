@@ -38,3 +38,9 @@ uwsm
 wireless-regdb
 iwd
 iw
+alsa-utils
+pipewire-audio
+pipewire-alsa
+pipewire-pulse
+libgpiod
+rtkit

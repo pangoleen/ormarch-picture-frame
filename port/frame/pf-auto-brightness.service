@@ -1,0 +1,10 @@
+[Unit]
+Description=PF1007L automatic backlight from the light sensor (LRADC0)
+
+[Service]
+ExecStart=/usr/local/bin/pf-auto-brightness
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

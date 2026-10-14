@@ -1,0 +1,8 @@
+[Unit]
+Description=PF1007L local web server for the dashboard (web view mode)
+
+[Service]
+# Only on this device (127.0.0.1). Files: ~/.local/share/pf-dashboard (for example Wes Bos's
+# photo-frame-dashboard, built on the Mac with "vite build").
+ExecStart=/usr/bin/python3 -m http.server 8085 --bind 127.0.0.1 --directory %h/.local/share/pf-dashboard
+Restart=on-failure

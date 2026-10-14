@@ -37,3 +37,6 @@ vm/out/
 vm/run/
 **/__pycache__/
 *.pyc
+
+# Built Claude Code payload (Anthropic software, never redistributed)
+port/frame/claude/out/

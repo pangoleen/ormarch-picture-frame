@@ -3,7 +3,10 @@
 set -euo pipefail
 
 yt_dlp="$HOME/.local/yt-dlp-venv/bin/yt-dlp"
-format='best[height<=480][vcodec^=avc1][acodec^=mp4a]/bestvideo[height<=480][vcodec^=avc1]+bestaudio[acodec^=mp4a]/18'
+# E077: YouTube no longer offers the combined format 18 for every video; join a 480p (or lower)
+# H.264 video stream with an AAC audio stream over plain HTTPS. The A33 decodes H.264 in software
+# up to about 480p; VP9 and AV1 are too heavy.
+format='bestvideo[height<=480][fps<=30][vcodec^=avc1][protocol=https]+bestaudio[acodec^=mp4a][protocol=https]/bestvideo[height<=480][vcodec^=avc1][protocol=https]+bestaudio[acodec^=mp4a][protocol=https]/best[height<=480][vcodec^=avc1]/18'
 
 if [[ $# -ne 1 ]]; then
   echo "Usage: $(basename "$0") <YouTube URL>" >&2
@@ -14,7 +17,10 @@ if [[ ! -x "$yt_dlp" ]]; then
   exit 69
 fi
 
-exec mpv --force-window=yes \
+# E077: YouTube ties each stream link to the address that asked for it. yt-dlp asked over IPv6,
+# mpv's downloader connected over IPv4: HTTP 403. Both use IPv4 now (and /etc/gai.conf prefers it).
+exec mpv --force-window=yes --fs \
   --script-opts="ytdl_hook-ytdl_path=$yt_dlp" \
   --ytdl-format="$format" \
+  --ytdl-raw-options-append=force-ipv4= \
   "$1"

@@ -1,0 +1,109 @@
+#!/usr/bin/env python3
+"""pf-auto-brightness: set the PF1007L backlight from the light sensor behind the front hole.
+
+The sensor is an analog part on the A33 key-voltage converter (LRADC0). The vendor driver
+sunxi-keyboard.ko sets the control register to 0x00c00041 and reports the 6-bit data register as the
+light value; the vendor framework maps it with the thresholds below (E063). Measured on the frame:
+0..2 with the hole covered, 60..62 in a lit room.
+
+Mainline has no driver that gives this value, so this service reads the two registers through
+/dev/mem. The lradc node must be disabled in the device tree (kernel/dts/pf1007l-light-sensor.dtso),
+or the key driver sets its own mode again.
+
+Stop for now:  sudo systemctl stop pf-auto-brightness      Value only:  pf-auto-brightness --print
+"""
+import mmap
+import os
+import struct
+import sys
+import time
+
+LRADC_PAGE, CTRL, DATA0 = 0x01C22000, 0x800, 0x80C
+VENDOR_CTRL = 0x00C00041
+BACKLIGHT = "/sys/class/backlight/backlight/brightness"
+# Vendor light thresholds (framework-res config_autoBrightnessLevels) and our level for each band.
+THRESHOLDS = [10, 17, 24, 31, 38, 45, 52, 59]
+LEVELS = [1, 2, 3, 4, 5, 6, 7, 8, 8]      # of 10. Capped at 8 until a long run at 10 has passed.
+HOLD_SECONDS = 2.0                         # a new band must stay this long
+
+fd = os.open("/dev/mem", os.O_RDWR | os.O_SYNC)
+mem = mmap.mmap(fd, 4096, mmap.MAP_SHARED, mmap.PROT_READ | mmap.PROT_WRITE, offset=LRADC_PAGE)
+
+
+def light():
+    if struct.unpack_from("<I", mem, CTRL)[0] != VENDOR_CTRL:
+        struct.pack_into("<I", mem, CTRL, VENDOR_CTRL)
+        time.sleep(0.1)
+    return struct.unpack_from("<I", mem, DATA0)[0] & 0x3F
+
+
+def level_for(value):
+    return LEVELS[sum(1 for t in THRESHOLDS if value >= t)]
+
+
+if "--print" in sys.argv:
+    print(light())
+    sys.exit(0)
+
+# Optional night mode: the screen goes fully off when the room is dark, as the stock firmware did.
+# Off by default. Switch on:  sudo mkdir -p /etc/pf1007l && sudo touch /etc/pf1007l/night-off
+NIGHT_SWITCH = "/etc/pf1007l/night-off"
+DARK_MAX = 1            # light value that counts as a dark room
+DARK_SECONDS = float(os.environ.get("PF_NIGHT_DARK_SECONDS", "120"))
+TOUCH_HOLD = 60.0       # after a touch the screen stays on this long in the dark
+
+
+def open_touch():
+    """The touch panel's event device, non-blocking: a touch wakes the screen in night mode."""
+    try:
+        blocks = open("/proc/bus/input/devices").read().split("\n\n")
+        for block in blocks:
+            if "silead_ts" in block:
+                for word in block.split():
+                    if word.startswith("event"):
+                        return os.open(f"/dev/input/{word}", os.O_RDONLY | os.O_NONBLOCK)
+    except OSError:
+        pass
+    return None
+
+
+def touched(fd):
+    if fd is None:
+        return False
+    seen = False
+    try:
+        while os.read(fd, 4096):
+            seen = True
+    except BlockingIOError:
+        pass
+    except OSError:
+        return False
+    return seen
+
+
+with open(BACKLIGHT) as f:
+    current = int(f.read())
+candidate, since = current, time.time()
+window = []
+touch_fd = open_touch()
+dark_since = None
+last_touch = 0.0
+while True:
+    now = time.time()
+    if touched(touch_fd):
+        last_touch = now
+    window = (window + [light()])[-8:]            # 2 s of readings
+    median = sorted(window)[len(window) // 2]
+    want = level_for(median)
+    if os.path.exists(NIGHT_SWITCH):
+        dark_since = (dark_since or now) if median <= DARK_MAX else None
+        if dark_since and now - dark_since >= DARK_SECONDS and now - last_touch >= TOUCH_HOLD:
+            want = 0
+    if want != candidate:
+        candidate, since = want, now
+    hold = 0.0 if current == 0 else HOLD_SECONDS     # wake at once, dim slowly
+    if candidate != current and now - since >= hold:
+        current += 1 if candidate > current else -1   # one level each step: no jump
+        with open(BACKLIGHT, "w") as f:
+            f.write(str(current))
+    time.sleep(0.25)

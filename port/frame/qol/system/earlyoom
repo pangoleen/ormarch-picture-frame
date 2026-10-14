@@ -1,0 +1,3 @@
+# PF1007L /etc/default/earlyoom: when memory runs out, end a browser content process first and
+# never the desktop itself. The patterns must hold no spaces (use [[:space:]]).
+EARLYOOM_ARGS="-r 3600 -n --prefer (^|/)(Isolated[[:space:]]Web[[:space:]]Co|Web[[:space:]]Content|firefox)$ --avoid (^|/)(init|systemd|sshd|Hyprland|quickshell|pipewire|wireplumber|squeekboard)$"

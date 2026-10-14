@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "id": "frame.controls",
+  "name": "Touch window controls",
+  "version": "1.0.0",
+  "description": "Close the focused window by touch",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "Close window",
+    "category": "Input",
+    "allowMultiple": false,
+    "defaultSection": "right"
+  }
+}

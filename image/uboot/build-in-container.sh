@@ -18,6 +18,14 @@ build() {	# $1 = defconfig, $2 = output name
 	echo "built $2: $(stat -c %s "/out/$2.bin") bytes, warnings: $(grep -c -i 'warning' "/out/$2.build.log" || true)"
 }
 build pf1007l_linux_defconfig       u-boot-pf1007l-L
+# A separate recovery binary.  It restores U-Boot's normal UMS write path but
+# keeps build L's MMC configuration: U-Boot has only mmc 0 (the removable SD),
+# and no eMMC controller or pins.  The normal image continues to use build L.
+if [ "${PF1007L_WRITABLE_RECOVERY:-0}" = 1 ]; then
+	patch -s -p1 < /u/0003-pf1007l-writable-recovery.patch
+	build pf1007l_linux_defconfig       u-boot-pf1007l-L-rw-recovery
+	patch -s -R -p1 < /u/0003-pf1007l-writable-recovery.patch
+fi
 build pf1007l_qemu_opipc_defconfig  u-boot-qemu-opipc
 mkimage -C none -A arm -T script -n "pf1007l build L boot script" -d /u/boot.cmd /out/boot.scr > /dev/null
 cp /u/boot.cmd /out/boot.cmd

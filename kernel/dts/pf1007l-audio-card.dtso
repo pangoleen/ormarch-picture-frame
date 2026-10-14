@@ -1,0 +1,29 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L A33 internal-codec test overlay.
+ *
+ * Apply only to a copy of the known-good full-bluetooth DTB.  The A33 base
+ * device tree already contains the standard simple-audio-card topology and
+ * its internal analogue codec node; the board DTB disabled the digital DAI,
+ * codec and card while the speaker circuit was unverified.
+ *
+ * This overlay changes only those three status properties.  In particular it
+ * does not claim PH09 (the vendor speaker-amplifier GPIO), change pinmux, or
+ * touch MMC/Wi-Fi nodes.  A successful boot must first show an ALSA card.
+ * Only then should a separately reversible PH09 amplifier test be considered.
+ */
+
+/dts-v1/;
+/plugin/;
+
+&dai {
+	status = "okay";
+};
+
+&codec {
+	status = "okay";
+};
+
+&sound {
+	status = "okay";
+};

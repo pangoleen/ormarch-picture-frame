@@ -1,0 +1,15 @@
+[Unit]
+Description=PF1007L dictation: local speech model, audio from the network, text typed into the focused window
+After=pf-ydotoold.service
+Wants=pf-ydotoold.service
+
+[Service]
+# ~/.local/share/pf-stt/model is a link to the model folder in use. Optional settings (one NAME=value
+# in each line) in ~/.config/pf-dictate.conf: PF_DICTATE_THREADS, PF_DICTATE_ENGINE.
+EnvironmentFile=-%h/.config/pf-dictate.conf
+ExecStart=%h/.local/share/pf-stt/venv/bin/python %h/.local/share/pf-stt/pf-dictate.py %h/.local/share/pf-stt/model
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,55 @@
+#!/usr/bin/env node
+// claude-daemon-status — live state of the Claude Code job daemon (CLAUDE_DAEMON=1):
+// how many agents are running, the concurrency cap, and how many are queued.
+//
+//   claude-daemon-status          → human line, or "not running"
+//   claude-daemon-status --json   → one JSON line (for the gateway to poll)
+//       {"daemon":true,"running":2,"max":3,"queued":5}  |  {"daemon":false}
+//
+// The daemon is lazy (only exists while a headless batch runs), so "not running"
+// is the normal idle state, not an error. Exit: 0 = up, 3 = no daemon. Speaks the
+// daemon's binary wire framing ([1 byte type][4 byte BE length][payload]); the
+// status frame is a type-1 JSON control message.
+import net from 'node:net';
+import path from 'node:path';
+
+const JSON_OUT = process.argv.includes('--json');
+const SOCK = process.env.CLAUDE_SOCK ||
+  path.join(process.env.XDG_RUNTIME_DIR || '/tmp', `claude-daemon-${process.getuid?.() ?? 'x'}.sock`);
+const T_JSON = 1;
+
+function down() {
+  if (JSON_OUT) process.stdout.write('{"daemon":false}\n');
+  else process.stdout.write('claude daemon: not running\n');
+  process.exit(3);
+}
+
+const sock = net.connect(SOCK);
+sock.setTimeout(4000);
+sock.once('timeout', () => { sock.destroy(); down(); });
+sock.once('error', down);
+sock.once('connect', () => {
+  const body = Buffer.from(JSON.stringify({ cmd: 'status' }), 'utf8');
+  const head = Buffer.allocUnsafe(5); head[0] = T_JSON; head.writeUInt32BE(body.length, 1);
+  sock.write(Buffer.concat([head, body]));
+});
+
+let buf = Buffer.alloc(0);
+sock.on('data', (chunk) => {
+  buf = buf.length ? Buffer.concat([buf, chunk]) : chunk;
+  while (buf.length >= 5) {
+    const len = buf.readUInt32BE(1);
+    if (buf.length < 5 + len) break;
+    const type = buf[0], payload = buf.subarray(5, 5 + len);
+    buf = buf.subarray(5 + len);
+    if (type !== T_JSON) continue;
+    let m; try { m = JSON.parse(payload.toString('utf8')); } catch { continue; }
+    if (m.type === 'status') {
+      if (JSON_OUT)
+        process.stdout.write(`{"daemon":true,"running":${m.running},"max":${m.max},"queued":${m.queued}}\n`);
+      else
+        process.stdout.write(`claude daemon: ${m.running}/${m.max} running, ${m.queued} queued\n`);
+      process.exit(0);
+    }
+  }
+});

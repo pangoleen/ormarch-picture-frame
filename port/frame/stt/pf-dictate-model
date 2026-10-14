@@ -1,0 +1,19 @@
+#!/bin/bash
+# pf-dictate-model: show or change the speech model that pf-dictate uses.
+#   pf-dictate-model                 list the installed models, mark the one in use
+#   pf-dictate-model <part-of-name>  select it (for example: parakeet, quantized, tiny-en-int8) and restart
+dir=$HOME/.local/share/pf-stt
+current=$(basename "$(readlink -f "$dir/model")")
+if [ $# -eq 0 ]; then
+	for m in "$dir"/sherpa-onnx-*/; do
+		m=$(basename "$m")
+		case $m in *streaming-zipformer*) continue ;; esac
+		[ "$m" = "$current" ] && echo "* $m" || echo "  $m"
+	done
+	exit 0
+fi
+match=$(ls -d "$dir"/sherpa-onnx-*"$1"*/ 2>/dev/null | grep -v streaming-zipformer | head -1)
+[ -n "$match" ] || { echo "no installed model matches '$1'" >&2; exit 1; }
+ln -sfn "${match%/}" "$dir/model"
+systemctl --user restart pf-dictate.service
+echo "model: $(basename "${match%/}") (ready in 10 to 25 s)"

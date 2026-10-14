@@ -1,0 +1,526 @@
+state.sun8ia33audio {
+	control.1 {
+		iface MIXER
+		name 'AIF1 AD0 Capture Volume'
+		value.0 160
+		value.1 160
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 192'
+			dbmin -9999999
+			dbmax 2400
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.2 {
+		iface MIXER
+		name 'AIF1 DA0 Playback Volume'
+		value.0 160
+		value.1 160
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 192'
+			dbmin -9999999
+			dbmax 2400
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.3 {
+		iface MIXER
+		name 'AIF2 ADC Capture Volume'
+		value.0 0
+		value.1 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 192'
+			dbmin -9999999
+			dbmax 2400
+			dbvalue.0 -9999999
+			dbvalue.1 -9999999
+		}
+	}
+	control.4 {
+		iface MIXER
+		name 'AIF2 DAC Playback Volume'
+		value.0 0
+		value.1 0
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 192'
+			dbmin -9999999
+			dbmax 2400
+			dbvalue.0 -9999999
+			dbvalue.1 -9999999
+		}
+	}
+	control.5 {
+		iface MIXER
+		name 'ADC Capture Volume'
+		value.0 160
+		value.1 160
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 192'
+			dbmin -9999999
+			dbmax 2400
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.6 {
+		iface MIXER
+		name 'DAC Playback Volume'
+		value.0 160
+		value.1 160
+		comment {
+			access 'read write'
+			type INTEGER
+			count 2
+			range '0 - 192'
+			dbmin -9999999
+			dbmax 2400
+			dbvalue.0 0
+			dbvalue.1 0
+		}
+	}
+	control.7 {
+		iface MIXER
+		name 'Headphone Playback Volume'
+		value 36
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 63'
+			dbmin -9999999
+			dbmax 0
+			dbvalue.0 -2700
+		}
+	}
+	control.8 {
+		iface MIXER
+		name 'Headphone Playback Switch'
+		value.0 true
+		value.1 true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.9 {
+		iface MIXER
+		name 'Line In Playback Volume'
+		value 3
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 7'
+			dbmin -450
+			dbmax 600
+			dbvalue.0 0
+		}
+	}
+	control.10 {
+		iface MIXER
+		name 'Mic2 Playback Volume'
+		value 3
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 7'
+			dbmin -450
+			dbmax 600
+			dbvalue.0 0
+		}
+	}
+	control.11 {
+		iface MIXER
+		name 'Mic2 Boost Volume'
+		value 4
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 7'
+			dbmin 0
+			dbmax 4200
+			dbvalue.0 3300
+		}
+	}
+	control.12 {
+		iface MIXER
+		name 'Mic1 Playback Volume'
+		value 3
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 7'
+			dbmin -450
+			dbmax 600
+			dbvalue.0 0
+		}
+	}
+	control.13 {
+		iface MIXER
+		name 'Mic1 Boost Volume'
+		value 4
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 7'
+			dbmin 0
+			dbmax 4200
+			dbvalue.0 3300
+		}
+	}
+	control.14 {
+		iface MIXER
+		name 'ADC Gain Capture Volume'
+		value 3
+		comment {
+			access 'read write'
+			type INTEGER
+			count 1
+			range '0 - 7'
+			dbmin -450
+			dbmax 600
+			dbvalue.0 0
+		}
+	}
+	control.15 {
+		iface MIXER
+		name 'AIF1 AD0 Stereo Capture Route'
+		value.0 Stereo
+		value.1 Stereo
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 2
+			item.0 Stereo
+			item.1 'Reverse Stereo'
+			item.2 'Sum Mono'
+			item.3 'Mix Mono'
+		}
+	}
+	control.16 {
+		iface MIXER
+		name 'AIF2 ADC Stereo Capture Route'
+		value.0 Stereo
+		value.1 Stereo
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 2
+			item.0 Stereo
+			item.1 'Reverse Stereo'
+			item.2 'Sum Mono'
+			item.3 'Mix Mono'
+		}
+	}
+	control.17 {
+		iface MIXER
+		name 'AIF3 ADC Source Capture Route'
+		value None
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 None
+			item.1 'AIF2 ADCL'
+			item.2 'AIF2 ADCR'
+		}
+	}
+	control.18 {
+		iface MIXER
+		name 'AIF1 Slot 0 Digital ADC Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.19 {
+		iface MIXER
+		name 'AIF2 Digital ADC Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.20 {
+		iface MIXER
+		name 'AIF1 Data Digital ADC Capture Switch'
+		value.0 true
+		value.1 true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.21 {
+		iface MIXER
+		name 'AIF2 Inv Digital ADC Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.22 {
+		iface MIXER
+		name 'AIF2 ADC Mixer AIF1 DA0 Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.23 {
+		iface MIXER
+		name 'AIF2 ADC Mixer AIF2 DAC Rev Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.24 {
+		iface MIXER
+		name 'AIF2 ADC Mixer ADC Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.25 {
+		iface MIXER
+		name 'AIF2 DAC Source Playback Route'
+		value AIF2
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 1
+			item.0 AIF2
+			item.1 AIF3+2
+			item.2 AIF2+3
+		}
+	}
+	control.26 {
+		iface MIXER
+		name 'AIF1 DA0 Stereo Playback Route'
+		value.0 Stereo
+		value.1 Stereo
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 2
+			item.0 Stereo
+			item.1 'Reverse Stereo'
+			item.2 'Sum Mono'
+			item.3 'Mix Mono'
+		}
+	}
+	control.27 {
+		iface MIXER
+		name 'AIF2 DAC Stereo Playback Route'
+		value.0 Stereo
+		value.1 Stereo
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 2
+			item.0 Stereo
+			item.1 'Reverse Stereo'
+			item.2 'Sum Mono'
+			item.3 'Mix Mono'
+		}
+	}
+	control.28 {
+		iface MIXER
+		name 'AIF1 Slot 0 Digital DAC Playback Switch'
+		value.0 true
+		value.1 true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.29 {
+		iface MIXER
+		name 'AIF2 Digital DAC Playback Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.30 {
+		iface MIXER
+		name 'ADC Digital DAC Playback Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.31 {
+		iface MIXER
+		name 'DAC Playback Switch'
+		value.0 true
+		value.1 true
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.32 {
+		iface MIXER
+		name 'DAC Reversed Playback Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.33 {
+		iface MIXER
+		name 'Line In Playback Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.34 {
+		iface MIXER
+		name 'Mic1 Playback Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.35 {
+		iface MIXER
+		name 'Mic2 Playback Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.36 {
+		iface MIXER
+		name 'Mixer Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.37 {
+		iface MIXER
+		name 'Mixer Reversed Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.38 {
+		iface MIXER
+		name 'Line In Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.39 {
+		iface MIXER
+		name 'Mic1 Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.40 {
+		iface MIXER
+		name 'Mic2 Capture Switch'
+		value.0 false
+		value.1 false
+		comment {
+			access 'read write'
+			type BOOLEAN
+			count 2
+		}
+	}
+	control.41 {
+		iface MIXER
+		name 'Headphone Source Playback Route'
+		value.0 DAC
+		value.1 DAC
+		comment {
+			access 'read write'
+			type ENUMERATED
+			count 2
+			item.0 DAC
+			item.1 Mixer
+		}
+	}
+}

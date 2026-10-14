@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * PF1007L test overlay for the sensor hunt (not for daily use).
+ *
+ *  - Capture routes for the codec, so that the ADC runs and MIC1, MIC2 and
+ *    Line In can be recorded (the speaker overlay leaves them out).
+ *  - I2C bus 2 (PE12/PE13, the camera connector of the vendor config), so
+ *    that it can be scanned. No camera rail is switched on here.
+ *
+ * Apply after pf1007l-audio-speaker.dtso (and pf1007l-vendor-rails.dtso).
+ */
+
+/dts-v1/;
+/plugin/;
+
+&sound {
+	simple-audio-card,widgets =
+		"Speaker", "Speaker",
+		"Microphone", "Mic";
+	simple-audio-card,routing =
+		"Left DAC", "DACL",
+		"Right DAC", "DACR",
+		"Speaker", "HP",
+		"ADCL", "Left ADC",
+		"ADCR", "Right ADC",
+		"MIC1", "Mic",
+		"MIC2", "Mic",
+		"Mic", "MBIAS",
+		"Mic", "HBIAS";
+};
+
+&i2c2 {
+	status = "okay";
+};

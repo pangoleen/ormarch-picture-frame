@@ -1,0 +1,5 @@
+# PF1007L /etc/udev/rules.d/60-pf1007l-perf.rules
+# (E075: the GPU clock is no longer held at 384 MHz; the frame has no battery and a weak supply
+# path, so the power draw stays as low as possible. Undo for a test: governor "performance".)
+# BFQ keeps the desktop responsive while something writes to the SD card.
+ACTION=="add|change", KERNEL=="mmcblk[0-9]", ATTR{queue/scheduler}="bfq"

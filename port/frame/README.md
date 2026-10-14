@@ -70,3 +70,11 @@ the package-oriented first-run task in the copied Omarchy defaults. It otherwise
 retries on every login after looking for missing package-owned user units, which
 creates duplicate welcome and update notifications. `apply.sh` starts the
 frame's keyboard, Bluetooth, PipeWire, and WirePlumber services explicitly.
+
+## Quality-of-life set
+
+`qol/qol.sh` (run on the frame after `apply.sh`) fixes the Omarchy features that are broken on this
+hardware and applies the low-memory settings: a screenshot stand-in, web apps through Firefox, a touch
+button that closes the focused window, a cleaned menu and bar, memory and CPU/GPU settings, Firefox
+defaults for 1 GB, a photo slideshow (`pf-slideshow`) and an optional night mode. Each change, its test
+and its rollback file are in `docs/experiments.md` (E070, E071).

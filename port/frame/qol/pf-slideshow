@@ -1,0 +1,23 @@
+#!/bin/bash
+# pf-slideshow: full-screen photo slideshow for the frame, with mpv.
+#   pf-slideshow start [folder]   default folder: ~/Pictures/frame   (one tap on the screen stops it)
+#   pf-slideshow stop
+# Seconds for each picture: PF_SLIDESHOW_SECONDS (default 30). Pictures of about 1280x800 load fastest.
+dir=${2:-$HOME/Pictures/frame}
+case ${1:-start} in
+  stop) pkill -f "wayland-app-id=pf-slideshow" ;;
+  start)
+    mkdir -p "$dir" "$HOME/.config/pf-slideshow"
+    conf=$HOME/.config/pf-slideshow/input.conf
+    [ -f "$conf" ] || printf 'MBTN_LEFT quit\nMBTN_RIGHT quit\nESC quit\nq quit\n' >"$conf"
+    if ! find "$dir" -type f \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) -print -quit | grep -q .; then
+      notify-send -t 6000 "Photo frame" "No pictures in $dir yet" 2>/dev/null
+      exit 1
+    fi
+    exec mpv --wayland-app-id=pf-slideshow --fs --no-osc --no-osd-bar --cursor-autohide=always \
+      --no-input-default-bindings --input-conf="$conf" --no-audio \
+      --image-display-duration="${PF_SLIDESHOW_SECONDS:-30}" --shuffle --loop-playlist=inf \
+      --directory-mode=recursive --directory-filter-types=image --really-quiet "$dir"
+    ;;
+  *) echo "Use: pf-slideshow start [folder] | stop"; exit 1 ;;
+esac

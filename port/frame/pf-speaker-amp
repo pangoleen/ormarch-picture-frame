@@ -1,0 +1,47 @@
+#!/bin/bash
+# pf-speaker-amp: switch the PF1007L speaker amplifier on while the codec plays.
+#
+# The amplifier enable pin is PH09 (vendor fex: audio_pa_ctrl), GPIO 233 of the
+# main pin controller. The stock kernel has no simple-amplifier driver, so this
+# service does the work: PH09 is high while the playback PCM runs and for a
+# short time after it stops. Measured on the frame in E062.
+set -u
+
+PIN=233
+CARD=sun8ia33audio
+STATUS=/proc/asound/$CARD/pcm0p/sub0/status
+GPIO=/sys/class/gpio/gpio$PIN
+HOLD_POLLS=8        # 8 x 0.25 s: keep the amplifier on for 2 s after playback stops
+TICK=/run/pf-speaker-amp.tick
+
+[ -d "$GPIO" ] || echo "$PIN" >/sys/class/gpio/export
+echo out >"$GPIO/direction"     # "out" drives the pin low
+
+cleanup() {
+	echo 0 >"$GPIO/value"
+	echo "$PIN" >/sys/class/gpio/unexport
+	exit 0
+}
+trap cleanup TERM INT
+
+# A FIFO that nobody writes to gives a sleep with no new process for each poll.
+[ -p "$TICK" ] || mkfifo "$TICK"
+exec 3<>"$TICK"
+
+amp=0
+idle=$HOLD_POLLS
+while :; do
+	status=""
+	[ -r "$STATUS" ] && status=$(<"$STATUS")
+	if [[ $status == *RUNNING* ]]; then
+		idle=0
+	elif ((idle < HOLD_POLLS)); then
+		idle=$((idle + 1))
+	fi
+	want=$((idle < HOLD_POLLS ? 1 : 0))
+	if ((want != amp)); then
+		echo "$want" >"$GPIO/value"
+		amp=$want
+	fi
+	read -r -t 0.25 -u 3 _ || true
+done

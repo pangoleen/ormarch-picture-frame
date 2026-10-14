@@ -1,0 +1,48 @@
+#!/usr/bin/env python3
+"""Persist the OAuth token printed by `claude setup-token`.
+
+`claude setup-token` displays a sk-ant-oat… token (valid 1 year) exactly once
+and does NOT write it to ~/.claude/.credentials.json. This helper stores it:
+  - ~/.claude/.oauth_token          (mode 600, plain copy for scripts)
+  - ~/.claude/settings.json         (env.CLAUDE_CODE_OAUTH_TOKEN, read by the CLI)
+
+Usage:
+  claude-token-save sk-ant-oat01-…      # or run without argument and paste it
+"""
+import json
+import os
+import sys
+
+
+def main():
+    if len(sys.argv) > 1:
+        token = sys.argv[1].strip()
+    else:
+        token = input("Paste the sk-ant-oat… token: ").strip()
+
+    if not token.startswith("sk-ant-oat"):
+        sys.exit("This does not look like a setup-token (expected sk-ant-oat…).")
+
+    claude_dir = os.path.expanduser("~/.claude")
+    os.makedirs(claude_dir, exist_ok=True)
+
+    keep = os.path.join(claude_dir, ".oauth_token")
+    with open(keep, "w") as f:
+        f.write(token + "\n")
+    os.chmod(keep, 0o600)
+
+    settings_path = os.path.join(claude_dir, "settings.json")
+    settings = {}
+    if os.path.exists(settings_path):
+        with open(settings_path) as f:
+            settings = json.load(f)
+    settings.setdefault("env", {})["CLAUDE_CODE_OAUTH_TOKEN"] = token
+    with open(settings_path, "w") as f:
+        json.dump(settings, f, indent=2)
+
+    print(f"Token saved: {keep} (600) + settings.json env.CLAUDE_CODE_OAUTH_TOKEN")
+    print('Test with:  claude -p "Say hi"')
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,10 @@
+[Unit]
+Description=PF1007L virtual keyboard daemon for dictation (ydotool)
+
+[Service]
+ExecStart=/usr/bin/ydotoold -m
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
