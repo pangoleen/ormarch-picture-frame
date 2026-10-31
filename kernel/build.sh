@@ -89,15 +89,24 @@ rm -rf "$BUILD"
 mkdir -p "$BUILD/panel" "$BUILD/dts" "$BUILD/dtb" "$BUILD/stock" "$BUILD/applycheck/$(dirname "$PANEL_C")"
 
 # 3a. panel driver = v7.3.6 file + our generated entry
-BASE=v7.3.6 sh "$KDIR/tools/regen_patch.sh" --out-driver "$BUILD/panel/$MOD.c" > "$LOGS/regen-patch.log"
-grep -E '^(CHECK|base:)' "$LOGS/regen-patch.log"
-# Control: the patch file, applied with git to the pristine v7.3.6 file, gives the same driver.
-# A private git directory makes `git apply` use paths relative to it (trap 3 of wifi/README.md).
+# dumps/ is git-ignored and exists only on the machine that read the frame. With both dump
+# files present, regenerate the driver and check it against the committed patch. Without
+# them, the committed patch is the input.
+mkdir -p "$BUILD/applycheck/$(dirname "$PANEL_C")"
 cp "$SRC/$PANEL_C" "$BUILD/applycheck/$PANEL_C"
+# A private git directory makes `git apply` use paths relative to it (trap 3 of wifi/README.md).
 git -C "$BUILD/applycheck" init -q
 git -C "$BUILD/applycheck" apply "$PATCH"
-cmp "$BUILD/applycheck/$PANEL_C" "$BUILD/panel/$MOD.c"
-echo "patch file applies to v7.3.6 with git apply and gives the built driver source"
+if [ -f "$ROOT/dumps/panel/sq9365_init_sequence.txt" ] && [ -f "$ROOT/dumps/sys_config.fex" ]; then
+	BASE=v7.3.6 sh "$KDIR/tools/regen_patch.sh" --out-driver "$BUILD/panel/$MOD.c" > "$LOGS/regen-patch.log"
+	grep -E '^(CHECK|base:)' "$LOGS/regen-patch.log"
+	# Control: the patch file, applied with git to the pristine v7.3.6 file, gives the same driver.
+	cmp "$BUILD/applycheck/$PANEL_C" "$BUILD/panel/$MOD.c"
+	echo "patch file applies to v7.3.6 with git apply and gives the built driver source"
+else
+	cp "$BUILD/applycheck/$PANEL_C" "$BUILD/panel/$MOD.c"
+	echo "panel driver built from the committed patch file: dumps/panel/sq9365_init_sequence.txt or dumps/sys_config.fex is absent"
+fi
 printf 'obj-m := %s.o\n' "$MOD" > "$BUILD/panel/Kbuild"
 
 # 3b. device trees
