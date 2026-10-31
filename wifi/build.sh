@@ -12,9 +12,6 @@
 set -euo pipefail
 
 # ---- pinned inputs ---------------------------------------------------------
-BASE_REPO="https://github.com/radxa-pkg/aic8800"
-BASE_COMMIT="e9e43ed79c50483080e9bcdfb08caeeb869d7191"   # 2026-10-12, release 5.0+git20260123.5f7be68d-10
-
 # menci/archlinuxarm:base-devel-20261012.38214418911 (image index digest)
 IMAGE="menci/archlinuxarm@sha256:3ede3a01ca0e0dc89fb6a539be60d836ff0b2aed724832dc5cefd00d22b5f04e"
 
@@ -28,8 +25,9 @@ JOBS="${JOBS:-10}"
 # ---- paths -----------------------------------------------------------------
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WIFI="$ROOT/wifi"
+. "$WIFI/aic8800-pin.sh"            # BASE_REPO, BASE_COMMIT, AIC_CLONE
 REFS="$ROOT/refs/aic"
-CLONE="$REFS/radxa-pkg_aic8800"
+CLONE="$AIC_CLONE"
 CACHE="$REFS/pkgcache"
 BUILD="$REFS/build"                 # clean build tree, made again on each run
 DRV="src/SDIO/driver_fw/driver"     # driver path in the Radxa repository
