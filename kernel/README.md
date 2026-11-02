@@ -18,8 +18,8 @@ Date: 2026-10-12. Status: **DRAFT. Not built into a kernel. Not run on the frame
 - **No upstream A33 or R16 board uses DSI.** The first picture is a real test of `sun6i_mipi_dsi.c`
   on this SoC.
 - The DTS passes `dtc` with zero warnings. This is a syntax check only.
-- Three values are still guesses: the regulator for the SoC pin `VCC-DSI`, the panel rotation (90 or
-  270), and the CPU supply (DCDC2 or DCDC3).
+- Two values are still guesses: the regulator for the SoC pin `VCC-DSI` and the CPU supply (DCDC2
+  or DCDC3). The panel rotation is 90, seen on the frame (2026-11-02).
 
 Tags in this file:
 
@@ -203,7 +203,7 @@ branch. "Pattern" is the mainline file that the node shape comes from.
 | `panel@0` `vccio-supply = DC1SW`, `vdd-supply = ELDO3` | `lcd_power = "axp22_dc1sw"`, `lcd_power1 = "axp22_eldo3"` | binding | Rails [VERIFIED] fex. Which one is VDD and which is VCCIO: [UNCONFIRMED]; the mapping gives the vendor order |
 | `panel@0` `reset-gpios = PH7, active low` | `lcd_gpio_0 = port:PH07<1><0><default><1>` | `sun50i-a64-pinephone.dtsi:156` | Pin [VERIFIED] fex. Polarity [VERIFIED] in `power-sequence.md` (code levels) |
 | `panel@0` `backlight` | — | binding | — |
-| `panel@0` `rotation = <90>` | **No fex value** | `mt8186-corsola-starmie.dtsi:133` | **[UNCONFIRMED]** 90 or 270 |
+| `panel@0` `rotation = <90>` | **No fex value** | `mt8186-corsola-starmie.dtsi:133` | **[VERIFIED on the frame, 2026-11-02]** 90. `sun6i_mipi_dsi` does not copy it to the connector: the boot labels add `video=DSI-1:panel_orientation=right_side_up` |
 | `&backlight` `pwms = <&pwm 0 20000 0>` | `lcd_pwm_ch = 0`, `lcd_pwm_freq = 50000` (1e9 / 50000 = 20000 ns), `lcd_pwm_pol = 0`, `[pwm0_para]` PH00 | reference dtsi | [VERIFIED] fex. Polarity 0 = normal = active high: `BPI-M2M-bsp__pwm-sunxi.c:105-126` [VERIFIED]. The reference value (50000 ns, inverted) is not correct for this board |
 | `&backlight` `enable-gpios = PH6, active high` | `lcd_bl_en = port:PH06<1><0><default><1>` | reference dtsi | [VERIFIED] fex |
 | `&backlight` levels, default level, `power-supply = DC1SW` | (`lcd0_backlight = 197`) | reference dtsi | [UNCONFIRMED — reference design] |
@@ -271,7 +271,7 @@ all mainline master `24a19b95`. "Read" means read, not run.
 | R12 | **Rails with no known consumer.** `[power_sply]` also has `dldo4 = 1800` and `eldo1 = 2800`. If the vendor bootloader turns them on and a part needs them (panel IO, touch, sensor), that part is dead under mainline. Linux turns off regulators that have no user | fex `[power_sply]`; meaning of `dldo1_val = 1003300` not decoded [UNCONFIRMED] | If touch, panel or sensor is dead: add `regulator-always-on` to `reg_dldo4` / `reg_eldo1` |
 | R13 | **Panel driver not in the kernel config.** The driver is `CONFIG_DRM_PANEL_JADARD_JD9365DA_H3` | `drivers/gpu/drm/panel/Kconfig:404`. Not checked in the ALARM config [UNCONFIRMED] | Set it to `m` or `y` with `DRM_SUN6I_DSI` and `PHY_SUN6I_MIPI_DPHY` |
 | R14 | **No early picture, no easy console.** U-Boot cannot drive DSI, so there is no boot picture. The debug UART shares the SD pins. The panel attaches only after the DRM device is registered (probe deferral), and the connector arrives as a hotplug event | dsi.c:966-986; `research/02` §2 | Use USB gadget networking, or the `-uart0-sd` variant with FEL boot |
-| R15 | **Rotation is not known**, and the display engine cannot rotate | `research/02` §6.3 | First picture in portrait is a pass. Then set 90 or 270 |
+| R15 | **Rotation is not known**, and the display engine cannot rotate | `research/02` §6.3 | **Closed 2026-11-02:** 90 is right, applied with `video=DSI-1:panel_orientation=right_side_up`; fbcon then rotates the console in software |
 
 Values that agree between mainline and the BSP for this mode (computed from the two sources, so
 these are **not** risks) [VERIFIED by reading; not measured]:
@@ -314,7 +314,7 @@ or measure the two inductors while the CPU frequency changes.
 | 2 | Board compatible `efercro,pf1007l` | Placeholder | Decide before any upstream work |
 | 3 | `vcc-dsi-supply` | DCDC1 (guess) | Schematic, or the tests in R3 |
 | 4 | Electrical role of DC1SW and ELDO3 (VDD / VCCIO) | Mapped for the vendor order only | Meter on the panel connector |
-| 5 | `rotation` | 90 (guess) | Look at the first picture; `getprop ro.sf.hwrotation` on Android |
+| 5 | `rotation` | 90 (verified 2026-11-02) | Look at the first picture; `getprop ro.sf.hwrotation` on Android |
 | 6 | CPU supply | No `cpu-supply`, rails fixed at 1.2 V | §5 |
 | 7 | Touch firmware, chip model, size, axes | Placeholder name; fex size 1024 x 600 | Extract the firmware from the vendor module; `evtest` |
 | 8 | Accelerometer chip | `silan,sc7a20`, disabled | `i2cdetect` / WHO_AM_I read, then enable |

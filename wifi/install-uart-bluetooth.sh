@@ -49,7 +49,7 @@ activate() {
   if ! grep -q "^LABEL full-bluetooth$" "$conf"; then
     awk '
       /^LABEL full$/ { full=1 }
-      full && /^$/ { print ""; print "LABEL full-bluetooth"; print "\tKERNEL /zImage"; print "\tINITRD /pf-initramfs.img"; print "\tFDT /dtbs/sun8i-a33-pf1007l-bluetooth.dtb"; print "\tAPPEND root=PARTUUID=50463037-02 rootfstype=ext4 rootwait ro console=tty0 ignore_loglevel log_buf_len=1M panic=20 psi=1 zswap.enabled=0 fsck.repair=yes cpufreq.default_governor=schedutil pf.label=full-bluetooth"; full=0; next }
+      full && /^$/ { print ""; print "LABEL full-bluetooth"; print "\tKERNEL /zImage"; print "\tINITRD /pf-initramfs.img"; print "\tFDT /dtbs/sun8i-a33-pf1007l-bluetooth.dtb"; print "\tAPPEND root=PARTUUID=50463037-02 rootfstype=ext4 rootwait ro console=tty0 ignore_loglevel log_buf_len=1M panic=20 psi=1 zswap.enabled=0 fsck.repair=yes cpufreq.default_governor=schedutil video=DSI-1:panel_orientation=right_side_up pf.label=full-bluetooth"; full=0; next }
       { print }
     ' "$conf" > "$conf.new" && mv "$conf.new" "$conf"
   fi
