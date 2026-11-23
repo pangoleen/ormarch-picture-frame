@@ -6,12 +6,12 @@
 #   kernel/out/sun8i-a33-pf1007l-uart0-sd.dtb  debug DTB (UART0 on the SD pins, FEL boot)
 #   kernel/out/SHA256SUMS
 #
-# for the STOCK Arch Linux ARM kernel linux-armv7 7.2.10-1 (no kernel build).
+# for the STOCK Arch Linux ARM kernel linux-armv7 7.3.6-1 (no kernel build).
 #
 # Run on the Mac:   kernel/build.sh
 # Needs:            bash, git, curl, shasum, tar, python3, docker (linux/arm/v7 emulation).
 # Writes only to:   refs/kernel/ (git-ignored cache and build tree), kernel/out/,
-#                   kernel/logs/, kernel/patches/v7.2.10/.
+#                   kernel/logs/, kernel/patches/v7.3.6/.
 # It does not use sudo. It does not touch USB devices or the frame.
 #
 # The module build and the DTB build run in an Arch Linux ARM armv7 container
@@ -20,10 +20,10 @@
 set -euo pipefail
 
 # ---- pinned inputs ---------------------------------------------------------
-KTAG="v7.2.10"                       # source of linux-armv7 7.2.10-1
-# Each source file is fetched by tag and checked against kernel/sources-v7.2.10.sha256.
+KTAG="v7.3.6"   # source of linux-armv7 7.3.6-1: its PKGBUILD builds linux-7.3.tar.xz + patch-7.3.6, so the module dir is 7.3.6-1
+# Each source file is fetched by tag and checked against kernel/sources-v7.3.6.sha256.
 # The hashes in that file were taken from the kernel.org release tarball
-# linux-7.2.10.tar.xz, SHA-256 2feaa70453e91f541be6a5c9078d8168e081af45a3d9718054850538cff2ebf3
+# linux-7.3.6.tar.xz, SHA-256 8183d475a76a0faffa92d6cd500af421f589dfd0300a0f1060bb875e11d45723
 # (equal to the line in https://cdn.kernel.org/pub/linux/kernel/v7.x/sha256sums.asc).
 KSRC_URL_1="https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/plain/%s?h=${KTAG}"
 KSRC_URL_2="https://raw.githubusercontent.com/gregkh/linux/${KTAG}/%s"
@@ -31,12 +31,12 @@ KSRC_URL_2="https://raw.githubusercontent.com/gregkh/linux/${KTAG}/%s"
 # menci/archlinuxarm:base-devel-20261012.38214418911 (image index digest), as in wifi/build.sh
 IMAGE="menci/archlinuxarm@sha256:3ede3a01ca0e0dc89fb6a539be60d836ff0b2aed724832dc5cefd00d22b5f04e"
 
-KPKGVER="7.2.10-1"
-KREL="7.2.10-1-armv7-ARCH"
+KPKGVER="7.3.6-1"
+KREL="7.3.6-1-armv7-ARCH"
 HPKG="linux-armv7-headers-${KPKGVER}-armv7h.pkg.tar.xz"
-HPKG_SHA256="c8a042ff54f94acf44db1bfa1a61083e2403008b81a349b71705728c2f9f6b04"
+HPKG_SHA256="25a8ee88fb62b14e3101f644b0c39d9a5e9ac631e477c1bc50bb4c652817f28b"
 KPKG="linux-armv7-${KPKGVER}-armv7h.pkg.tar.xz"       # only for the controls (stock DTB, stock vermagic)
-KPKG_SHA256="b49a4d4dd1a99c1f71eced0fa9fc28d8348d8749a5db6696c56dcd77ade6ebca"
+KPKG_SHA256="2f5625602b47558d29ffffc8c87d55e56dc37e51e87520e9390e5025b32e84e1"
 MIRROR="http://mirror.archlinuxarm.org/armv7h/core"     # the mirror redirects: curl -L
 
 JOBS="${JOBS:-10}"
@@ -45,19 +45,19 @@ JOBS="${JOBS:-10}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 KDIR="$ROOT/kernel"
 REFS="$ROOT/refs/kernel"
-SRC="$REFS/linux-7.2.10"            # pinned v7.2.10 files (only the files that are necessary)
+SRC="$REFS/linux-7.3.6"            # pinned v7.3.6 files (only the files that are necessary)
 CACHE="$REFS/pkgcache"
 BUILD="$REFS/build"                 # clean build tree, made again on each run
 OUT="$KDIR/out"
 LOGS="$KDIR/logs"
-MANIFEST="$KDIR/sources-v7.2.10.sha256"
+MANIFEST="$KDIR/sources-v7.3.6.sha256"
 MOD="panel-jadard-jd9365da-h3"
 PANEL_C="drivers/gpu/drm/panel/$MOD.c"
-PATCH="$KDIR/patches/v7.2.10/0001-drm-panel-jadard-jd9365da-h3-add-pf1007l-panel.patch"
+PATCH="$KDIR/patches/v7.3.6/0001-drm-panel-jadard-jd9365da-h3-add-pf1007l-panel.patch"
 
 mkdir -p "$SRC" "$CACHE" "$OUT" "$LOGS"
 
-# ---- 1. v7.2.10 source files -------------------------------------------------
+# ---- 1. v7.3.6 source files -------------------------------------------------
 while read -r _ f; do
 	[ -n "$f" ] || continue
 	if [ ! -f "$SRC/$f" ]; then
@@ -69,8 +69,8 @@ while read -r _ f; do
 	fi
 done < "$MANIFEST"
 ( cd "$SRC" && shasum -a 256 -c "$MANIFEST" > "$LOGS/sources-check.log" ) ||
-	{ cat "$LOGS/sources-check.log"; echo "FAIL: a v7.2.10 source file does not have the pinned hash" >&2; exit 1; }
-echo "v7.2.10 sources: $(grep -c ': OK$' "$LOGS/sources-check.log") files have the pinned hash"
+	{ cat "$LOGS/sources-check.log"; echo "FAIL: a v7.3.6 source file does not have the pinned hash" >&2; exit 1; }
+echo "v7.3.6 sources: $(grep -c ': OK$' "$LOGS/sources-check.log") files have the pinned hash"
 # Two links that the kernel tree has (they are links in git, so they are made here).
 mkdir -p "$SRC/scripts/dtc/include-prefixes"
 ln -sfn ../../../include/dt-bindings "$SRC/scripts/dtc/include-prefixes/dt-bindings"
@@ -88,16 +88,16 @@ fetch_pkg "$KPKG" "$KPKG_SHA256"
 rm -rf "$BUILD"
 mkdir -p "$BUILD/panel" "$BUILD/dts" "$BUILD/dtb" "$BUILD/stock" "$BUILD/applycheck/$(dirname "$PANEL_C")"
 
-# 3a. panel driver = v7.2.10 file + our generated entry
-BASE=v7.2.10 sh "$KDIR/tools/regen_patch.sh" --out-driver "$BUILD/panel/$MOD.c" > "$LOGS/regen-patch.log"
+# 3a. panel driver = v7.3.6 file + our generated entry
+BASE=v7.3.6 sh "$KDIR/tools/regen_patch.sh" --out-driver "$BUILD/panel/$MOD.c" > "$LOGS/regen-patch.log"
 grep -E '^(CHECK|base:)' "$LOGS/regen-patch.log"
-# Control: the patch file, applied with git to the pristine v7.2.10 file, gives the same driver.
+# Control: the patch file, applied with git to the pristine v7.3.6 file, gives the same driver.
 # A private git directory makes `git apply` use paths relative to it (trap 3 of wifi/README.md).
 cp "$SRC/$PANEL_C" "$BUILD/applycheck/$PANEL_C"
 git -C "$BUILD/applycheck" init -q
 git -C "$BUILD/applycheck" apply "$PATCH"
 cmp "$BUILD/applycheck/$PANEL_C" "$BUILD/panel/$MOD.c"
-echo "patch file applies to v7.2.10 with git apply and gives the built driver source"
+echo "patch file applies to v7.3.6 with git apply and gives the built driver source"
 printf 'obj-m := %s.o\n' "$MOD" > "$BUILD/panel/Kbuild"
 
 # 3b. device trees
@@ -184,7 +184,7 @@ docker run --rm --platform linux/arm/v7 \
 		DTC=$K/scripts/dtc/dtc
 		INC=/linux/scripts/dtc/include-prefixes
 		ALW=/linux/arch/arm/boot/dts/allwinner
-		# cmd_dtc of scripts/Makefile.dtbs (v7.2.10). $1 = source, $2 = output, $3 = dtc flags, $4... = cpp flags
+		# cmd_dtc of scripts/Makefile.dtbs (v7.3.6). $1 = source, $2 = output, $3 = dtc flags, $4... = cpp flags
 		dtb() {
 			src=$1; out=$2; flags=$3; shift 3
 			gcc -E -nostdinc -I "$INC" -I "$ALW" -undef -D__DTS__ -x assembler-with-cpp "$@" -o "$out.pp" "$src"

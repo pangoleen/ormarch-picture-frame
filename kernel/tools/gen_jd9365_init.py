@@ -7,8 +7,8 @@ Inputs (all from THIS frame, nothing is typed by hand):
   --seq     dumps/panel/sq9365_init_sequence.txt   vendor DSI init sequence
   --fex     dumps/sys_config.fex                   vendor board config ([lcd0_para])
   --driver  the driver source to patch. Two bases are in use (see regen_patch.sh):
-            refs/kernel/linux-7.2.10/drivers/gpu/drm/panel/panel-jadard-jd9365da-h3.c
-            (Linux v7.2.10 = the stock linux-armv7 7.2.10-1 kernel; this one is built)
+            refs/kernel/linux-7.3.6/drivers/gpu/drm/panel/panel-jadard-jd9365da-h3.c
+            (Linux v7.3.6 = the stock linux-armv7 7.3.6-1 kernel; this one is built)
             refs/linux-snippets/panel-jadard-jd9365da-h3.c   (mainline master)
 
 Outputs:

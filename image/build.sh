@@ -21,10 +21,10 @@ ALARM_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-armv7-latest.tar.gz"
 ALARM_SHA256="${ALARM_SHA256:-ebe0fa119dea45e3af0aa61785676bdbf417bc5f754d529b87255dbf0ca4e3f0}"  # the file of 2026-08-05
 ALARM_TAG="tarball-20260805"
 
-KPKG="linux-armv7-7.2.10-1-armv7h.pkg.tar.xz"
+KPKG="linux-armv7-7.3.6-1-armv7h.pkg.tar.xz"
 KPKG_URL="http://mirror.archlinuxarm.org/armv7h/core/$KPKG"
-KPKG_SHA256="b49a4d4dd1a99c1f71eced0fa9fc28d8348d8749a5db6696c56dcd77ade6ebca"
-KVER="7.2.10-1-armv7-ARCH"
+KPKG_SHA256="2f5625602b47558d29ffffc8c87d55e56dc37e51e87520e9390e5025b32e84e1"
+KVER="7.3.6-1-armv7-ARCH"
 
 # Layout of the card image (MBR).
 SIG="50463037"                 # MBR disk signature -> PARTUUID=50463037-01 / -02
@@ -134,9 +134,9 @@ EOF
 # ---- step: dtbs -----------------------------------------------------------------
 step_dtbs() {
 	say "kernel device trees (min, pmic, full)"
-	local inc="$ROOT/refs/kernel/linux-7.2.10"
+	local inc="$ROOT/refs/kernel/linux-7.3.6"
 	[ -f "$inc/arch/arm/boot/dts/allwinner/sun8i-a33.dtsi" ] || inc="$ROOT/refs/linux-snippets"
-	[ -f "$inc/arch/arm/boot/dts/allwinner/sun8i-a33.dtsi" ] || stop "no kernel .dtsi files: need refs/kernel/linux-7.2.10 or refs/linux-snippets (see kernel/README.md)"
+	[ -f "$inc/arch/arm/boot/dts/allwinner/sun8i-a33.dtsi" ] || stop "no kernel .dtsi files: need refs/kernel/linux-7.3.6 or refs/linux-snippets (see kernel/README.md)"
 	[ -f "$ROOT/kernel/dts/sun8i-a33-pf1007l.dts" ] || stop "no board draft: kernel/dts/sun8i-a33-pf1007l.dts"
 	echo "include tree: ${inc#"$ROOT"/}"
 	fresh_dir "$WORK/dtbs"

@@ -2,9 +2,9 @@
 # Regenerate the panel patch from the dumps. Run from any directory.
 # Read-only on dumps/ and refs/. No device access.
 #
-#   BASE=v7.2.10 sh kernel/tools/regen_patch.sh   (default)
-#       base = the driver of Linux v7.2.10, the source of the stock Arch Linux
-#       ARM kernel linux-armv7 7.2.10-1. Writes kernel/patches/v7.2.10/0001-*.patch.
+#   BASE=v7.3.6 sh kernel/tools/regen_patch.sh   (default)
+#       base = the driver of Linux v7.3.6, the source of the stock Arch Linux
+#       ARM kernel linux-armv7 7.3.6-1. Writes kernel/patches/v7.3.6/0001-*.patch.
 #       This is the patch that kernel/build.sh builds.
 #   BASE=master sh kernel/tools/regen_patch.sh
 #       base = mainline master 24a19b95 (refs/linux-snippets). Writes
@@ -12,17 +12,17 @@
 #
 # The generated C block is the same for the two bases. Only the patch context
 # and the line numbers are different. The master patch does NOT apply to
-# v7.2.10 (see kernel/README.md section 9).
+# v7.3.6 (see kernel/README.md section 9).
 set -eu
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-BASE=${BASE:-v7.2.10}
+BASE=${BASE:-v7.3.6}
 NAME=0001-drm-panel-jadard-jd9365da-h3-add-pf1007l-panel.patch
 case "$BASE" in
-v7.2.10)
-	DRIVER=${DRIVER:-"$ROOT/refs/kernel/linux-7.2.10/drivers/gpu/drm/panel/panel-jadard-jd9365da-h3.c"}
-	OUT_PATCH=${OUT_PATCH:-"$ROOT/kernel/patches/v7.2.10/$NAME"}
-	STATE='Base: Linux v7.2.10. Built as an out-of-tree module against
-linux-armv7-headers 7.2.10-1 (kernel/build.sh). Not tested on hardware.
+v7.3.6)
+	DRIVER=${DRIVER:-"$ROOT/refs/kernel/linux-7.3.6/drivers/gpu/drm/panel/panel-jadard-jd9365da-h3.c"}
+	OUT_PATCH=${OUT_PATCH:-"$ROOT/kernel/patches/v7.3.6/$NAME"}
+	STATE='Base: Linux v7.3.6. Built as an out-of-tree module against
+linux-armv7-headers 7.3.6-1 (kernel/build.sh). Not tested on hardware.
 Do not send upstream as is.'
 	;;
 master)
@@ -32,12 +32,12 @@ master)
 Not tested on hardware. Do not send upstream as is.'
 	;;
 *)
-	echo "BASE must be v7.2.10 or master" >&2
+	echo "BASE must be v7.3.6 or master" >&2
 	exit 2
 	;;
 esac
 if [ ! -f "$DRIVER" ]; then
-	echo "driver source not found: $DRIVER (run kernel/build.sh, it fetches the pinned v7.2.10 files)" >&2
+	echo "driver source not found: $DRIVER (run kernel/build.sh, it fetches the pinned v7.3.6 files)" >&2
 	exit 1
 fi
 mkdir -p "$(dirname "$OUT_PATCH")"

@@ -12,7 +12,7 @@ export LANG=C.UTF-8
 [[ $(id -un) == "frame" ]] || { echo "STOP: run as user frame"; exit 1; }
 [[ $(uname -m) == "armv7l" ]] || { echo "STOP: needs armv7l"; exit 1; }
 [[ -f /boot/extlinux/extlinux.conf ]] || { echo "STOP: no /boot config"; exit 1; }
-uname -r | grep -q "^7.2.10-1-armv7-ARCH" || { echo "STOP: kernel must stay 7.2.10-1"; exit 1; }
+uname -r | grep -q "^7.3.6-1-armv7-ARCH" || { echo "STOP: kernel must stay 7.3.6-1"; exit 1; }
 
 # The base recovery image deliberately stays small and does not require Git.
 # Bootstrap needs it only to fetch the pinned Omarchy source.

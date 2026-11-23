@@ -9,7 +9,7 @@ OUT="$ROOT/wifi/out/bluetooth-sdio"
 LOGS="$ROOT/wifi/logs/bluetooth-sdio"
 COMMIT=e9e43ed79c50483080e9bcdfb08caeeb869d7191
 DRV=src/SDIO/driver_fw/driver
-HPKG=linux-armv7-headers-7.2.10-1-armv7h.pkg.tar.xz
+HPKG=linux-armv7-headers-7.3.6-1-armv7h.pkg.tar.xz
 IMAGE=menci/archlinuxarm@sha256:3ede3a01ca0e0dc89fb6a539be60d836ff0b2aed724832dc5cefd00d22b5f04e
 mkdir -p "$OUT" "$LOGS"
 rm -rf "$BUILD"
@@ -26,13 +26,13 @@ done < "$BUILD/debian/patches/series"
 if [ -f "$ROOT/wifi/bluetooth-sdio.patch" ]; then
     git -C "$BUILD" apply "$ROOT/wifi/bluetooth-sdio.patch"
 fi
-echo "c8a042ff54f94acf44db1bfa1a61083e2403008b81a349b71705728c2f9f6b04  $ROOT/refs/aic/pkgcache/$HPKG" | shasum -a 256 -c -
+echo "25a8ee88fb62b14e3101f644b0c39d9a5e9ac631e477c1bc50bb4c652817f28b  $ROOT/refs/aic/pkgcache/$HPKG" | shasum -a 256 -c -
 docker run --rm --platform linux/arm/v7 \
     -v "$BUILD:/src" -v "$ROOT/refs/aic/pkgcache:/pkg:ro" \
     -v "$OUT:/out" -v "$LOGS:/logs" -e HPKG="$HPKG" -e DRV="$DRV" \
     "$IMAGE" bash -euo pipefail -c '
         pacman -U --noconfirm --disable-sandbox "/pkg/$HPKG" >/dev/null
-        K=/usr/lib/modules/7.2.10-1-armv7-ARCH/build
+        K=/usr/lib/modules/7.3.6-1-armv7-ARCH/build
         cd "/src/$DRV/aic8800"
         make -j10 -C "$K" M="$PWD" CONFIG_SDIO_BT=y modules 2>&1 | tee /logs/build.log
         cp aic8800_bsp/aic8800_bsp.ko aic8800_fdrv/aic8800_fdrv.ko /out/

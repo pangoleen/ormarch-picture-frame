@@ -1,7 +1,7 @@
 #!/bin/sh
 # Fast syntax check of the board DTS files on the Mac: C preprocessor + dtc.
-# Needs: clang and dtc (Homebrew). Reads the pinned Linux v7.2.10 include tree in
-# refs/kernel/linux-7.2.10 (kernel/build.sh fetches it). Writes only to OUT
+# Needs: clang and dtc (Homebrew). Reads the pinned Linux v7.3.6 include tree in
+# refs/kernel/linux-7.3.6 (kernel/build.sh fetches it). Writes only to OUT
 # (default: a temporary directory). No device access.
 #
 # This is a SYNTAX check for work on the DTS. It uses the Homebrew dtc, not the dtc
@@ -9,8 +9,8 @@
 # kernel/tools/dtbs_check.sh.
 set -eu
 ROOT=$(cd "$(dirname "$0")/../.." && pwd)
-K="$ROOT/refs/kernel/linux-7.2.10"
-[ -f "$K/arch/arm/boot/dts/allwinner/sun8i-a33.dtsi" ] || { echo "run kernel/build.sh first (it fetches the v7.2.10 files)" >&2; exit 1; }
+K="$ROOT/refs/kernel/linux-7.3.6"
+[ -f "$K/arch/arm/boot/dts/allwinner/sun8i-a33.dtsi" ] || { echo "run kernel/build.sh first (it fetches the v7.3.6 files)" >&2; exit 1; }
 OUT=${OUT:-$(mktemp -d)}
 mkdir -p "$OUT"
 rc=0

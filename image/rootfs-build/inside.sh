@@ -6,8 +6,8 @@
 #             optional kernel/out files, SSH public key and host key
 #   /manifest output: package list, module list
 set -euo pipefail
-KVER=7.2.10-1-armv7-ARCH
-KPKG=linux-armv7-7.2.10-1-armv7h.pkg.tar.xz
+KVER=7.3.6-1-armv7-ARCH
+KPKG=linux-armv7-7.3.6-1-armv7h.pkg.tar.xz
 P="pacman --noconfirm --disable-sandbox"
 say() { echo "=== $*"; }
 

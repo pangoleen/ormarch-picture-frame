@@ -113,7 +113,7 @@ check "initramfs: root file system found by PARTUUID" grep -q -a 'stage=35-root-
 check "user frame, sudo without a password" r 'test "$(id -un)" = frame && sudo -n true'
 check "no password exists: root and frame have no hash in /etc/shadow, user alarm is removed" r 'test "$(sudo grep -c -E "^(root|frame):!:" /etc/shadow)" = 2 && ! grep -q "^alarm:" /etc/passwd'
 check "sshd: password authentication is off" r 'sudo /usr/bin/sshd -T | grep -i -qx "passwordauthentication no" && sudo /usr/bin/sshd -T | grep -i -qx "permitrootlogin no"'
-check "kernel 7.2.10-1-armv7-ARCH" r 'test "$(uname -r)" = 7.2.10-1-armv7-ARCH'
+check "kernel 7.3.6-1-armv7-ARCH" r 'test "$(uname -r)" = 7.3.6-1-armv7-ARCH'
 check "not a systemd 'first boot' (no preset-all)" r '! sudo journalctl -b --no-pager | grep -q "Detected first boot"'
 echo "waiting for the first-boot work (root file system growth, pacman keyring) ..."
 n=0; until r 'test ! -e /var/lib/pf1007l/firstboot-pending' 2>/dev/null; do n=$((n + 10)); [ "$n" -ge 900 ] && break; sleep 10; done

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # dt-schema check (the kernel's `make dtbs_check`) of the two board DTBs against
-# the binding schemas of Linux v7.2.10. Run kernel/build.sh first.
+# the binding schemas of Linux v7.3.6. Run kernel/build.sh first.
 #
 #   kernel/tools/dtbs_check.sh
 #
@@ -9,8 +9,8 @@
 # Its messages are the baseline of the upstream A33 tablet files. The script prints
 # the messages of OUR DTBs that are NOT in the baseline.
 #
-# Needs: docker. The bindings tree must be in refs/kernel/linux-7.2.10/Documentation/
-# devicetree/bindings (from linux-7.2.10.tar.xz, SHA-256 2feaa704...cff2ebf3; build.sh
+# Needs: docker. The bindings tree must be in refs/kernel/linux-7.3.6/Documentation/
+# devicetree/bindings (from linux-7.3.6.tar.xz, SHA-256 8183d475...11d45723; build.sh
 # does not fetch it, because the build does not use it: see the end of this file).
 # Writes only to refs/kernel/dtschema/, refs/kernel/pipcache/ and kernel/logs/.
 set -euo pipefail
@@ -20,15 +20,15 @@ IMAGE="python@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317
 DTSCHEMA="2026.9"
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-SRC="$ROOT/refs/kernel/linux-7.2.10"
+SRC="$ROOT/refs/kernel/linux-7.3.6"
 WORK="$ROOT/refs/kernel/dtschema"
 LOGS="$ROOT/kernel/logs"
 B="Documentation/devicetree/bindings"
 
 [ -d "$SRC/$B/display" ] || {
 	echo "bindings tree not found. Get it:" >&2
-	echo "  curl -LO https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.2.10.tar.xz" >&2
-	echo "  tar -xJf linux-7.2.10.tar.xz -C refs/kernel linux-7.2.10/$B" >&2
+	echo "  curl -LO https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.3.6.tar.xz" >&2
+	echo "  tar -xJf linux-7.3.6.tar.xz -C refs/kernel linux-7.3.6/$B" >&2
 	exit 1
 }
 [ -f "$ROOT/kernel/out/sun8i-a33-pf1007l.dtb" ] && [ -f "$ROOT/refs/kernel/build/dtb/control-ga10h.dtb" ] ||
@@ -80,7 +80,7 @@ EOF
 C="$WORK/control-sun8i-a33-ga10h-v1.1"
 norm "$C.dtschema.txt" > "$C.norm.txt"
 {
-	echo "dt-schema check, dtschema $DTSCHEMA, bindings of Linux v7.2.10"
+	echo "dt-schema check, dtschema $DTSCHEMA, bindings of Linux v7.3.6"
 	echo "control (upstream sun8i-a33-ga10h-v1.1, = stock DTB): $(wc -l < "$C.norm.txt" | tr -d ' ') messages"
 	for d in sun8i-a33-pf1007l sun8i-a33-pf1007l-uart0-sd; do
 		norm "$WORK/$d.dtschema.txt" > "$WORK/$d.norm.txt"
