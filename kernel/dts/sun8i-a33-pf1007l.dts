@@ -257,8 +257,11 @@
 		backlight = <&backlight>;
 		/*
 		 * The panel is 800x1280 (portrait). The frame stands in
-		 * landscape. TODO: 90 or 270. Not known before the first
-		 * picture (project open question 7, ro.sf.hwrotation).
+		 * landscape. 90 (DRM "right side up") is right: an
+		 * unrotated picture shows turned 90 degrees counter-clockwise
+		 * (seen on the frame, 2026-11-02). sun6i_mipi_dsi makes its own
+		 * connector and does not copy this value to it, so the boot
+		 * labels also pass video=DSI-1:panel_orientation=right_side_up.
 		 */
 		rotation = <90>;
 	};
