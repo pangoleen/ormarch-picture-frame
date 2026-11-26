@@ -5,13 +5,13 @@
 #
 #   kernel/tools/qemu_axp_hog_test.sh
 #
-# Why: the binding schema of v7.2.10 (gpio/x-powers,axp209-gpio.yaml) does not
+# Why: the binding schema of v7.3.6 (gpio/x-powers,axp209-gpio.yaml) does not
 # list hog nodes, so dt-schema reports our node. The question is whether the
 # stock kernel accepts the node and drives the pin, or whether the node stops the
 # AXP GPIO driver.
 #
 # Machine: qemu-system-arm -M bpim2u (Banana Pi M2 Ultra, Allwinner R40, with an
-# emulated AXP221 PMIC on I2C). Kernel: the stock zImage of linux-armv7 7.2.10-1.
+# emulated AXP221 PMIC on I2C). Kernel: the stock zImage of linux-armv7 7.3.6-1.
 # DTB: the stock sun8i-r40-bananapi-m2-ultra.dtb, and a copy with our hog node.
 #   run A (control): stock DTB           -> no hog, GPIO0 control register unchanged
 #   run B:           stock DTB + hog     -> hog line present, register = output high
@@ -22,7 +22,7 @@
 # Writes only to refs/kernel/qemu-hog/ and kernel/logs/.
 set -euo pipefail
 
-KPKG="linux-armv7-7.2.10-1-armv7h.pkg.tar.xz"
+KPKG="linux-armv7-7.3.6-1-armv7h.pkg.tar.xz"
 BBPKG="busybox-1.36.1-4-armv7h.pkg.tar.xz"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 CACHE="$ROOT/refs/kernel/pkgcache"
@@ -31,7 +31,7 @@ LOG="$ROOT/kernel/logs/qemu-axp-hog-bpim2u.log"
 DTB=sun8i-r40-bananapi-m2-ultra
 
 ( cd "$CACHE" && shasum -a 256 -c "$ROOT/kernel/tools/qemu_loadtest.sha256" )
-echo "b49a4d4dd1a99c1f71eced0fa9fc28d8348d8749a5db6696c56dcd77ade6ebca  $CACHE/$KPKG" | shasum -a 256 -c -
+echo "2f5625602b47558d29ffffc8c87d55e56dc37e51e87520e9390e5025b32e84e1  $CACHE/$KPKG" | shasum -a 256 -c -
 
 rm -rf "$W"
 mkdir -p "$W/stock" "$W/bb" "$W/root/bin" "$W/root/dev" "$W/root/proc" "$W/root/sys"

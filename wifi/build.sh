@@ -12,24 +12,22 @@
 set -euo pipefail
 
 # ---- pinned inputs ---------------------------------------------------------
-BASE_REPO="https://github.com/radxa-pkg/aic8800"
-BASE_COMMIT="e9e43ed79c50483080e9bcdfb08caeeb869d7191"   # 2026-10-12, release 5.0+git20260123.5f7be68d-10
-
 # menci/archlinuxarm:base-devel-20261012.38214418911 (image index digest)
 IMAGE="menci/archlinuxarm@sha256:3ede3a01ca0e0dc89fb6a539be60d836ff0b2aed724832dc5cefd00d22b5f04e"
 
-KPKGVER="${KPKGVER:-7.2.10-1}"                          # linux-armv7-headers package version
+KPKGVER="${KPKGVER:-7.3.6-1}"                          # linux-armv7-headers package version
 KPKG="linux-armv7-headers-${KPKGVER}-armv7h.pkg.tar.xz"
 KPKG_URL="http://mirror.archlinuxarm.org/armv7h/core/${KPKG}"   # the mirror redirects: curl -L
-KPKG_SHA256_7_2_10_1="c8a042ff54f94acf44db1bfa1a61083e2403008b81a349b71705728c2f9f6b04"
+KPKG_SHA256_7_3_6_1="25a8ee88fb62b14e3101f644b0c39d9a5e9ac631e477c1bc50bb4c652817f28b"
 
 JOBS="${JOBS:-10}"
 
 # ---- paths -----------------------------------------------------------------
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 WIFI="$ROOT/wifi"
+. "$WIFI/aic8800-pin.sh"            # BASE_REPO, BASE_COMMIT, AIC_CLONE
 REFS="$ROOT/refs/aic"
-CLONE="$REFS/radxa-pkg_aic8800"
+CLONE="$AIC_CLONE"
 CACHE="$REFS/pkgcache"
 BUILD="$REFS/build"                 # clean build tree, made again on each run
 DRV="src/SDIO/driver_fw/driver"     # driver path in the Radxa repository
@@ -81,8 +79,8 @@ shopt -u nullglob
 if [ ! -f "$CACHE/$KPKG" ]; then
 	curl -fL -o "$CACHE/$KPKG" "$KPKG_URL"
 fi
-if [ "$KPKGVER" = "7.2.10-1" ]; then
-	echo "$KPKG_SHA256_7_2_10_1  $CACHE/$KPKG" | shasum -a 256 -c -
+if [ "$KPKGVER" = "7.3.6-1" ]; then
+	echo "$KPKG_SHA256_7_3_6_1  $CACHE/$KPKG" | shasum -a 256 -c -
 fi
 
 # ---- 6. build in the armv7 container ----------------------------------------

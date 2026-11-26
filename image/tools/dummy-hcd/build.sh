@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # TEST ONLY. Build dummy_hcd.ko (the kernel's loopback USB host + device controller)
-# for linux-armv7 7.2.10-1. The stock kernel does not ship it (CONFIG_USB_DUMMY_HCD is
+# for linux-armv7 7.3.6-1. The stock kernel does not ship it (CONFIG_USB_DUMMY_HCD is
 # not set). The QEMU test loads it to give the gadget a controller, so that the same
 # kernel enumerates the frame's gadget as a USB host would. It is NOT in the card image.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/../.." && pwd)"; ROOT="$(cd "$HERE/.." && pwd)"
 IMAGE="menci/archlinuxarm@sha256:3ede3a01ca0e0dc89fb6a539be60d836ff0b2aed724832dc5cefd00d22b5f04e"   # base-devel, as wifi/build.sh
-KPKG="linux-armv7-headers-7.2.10-1-armv7h.pkg.tar.xz"
-KPKG_SHA256="c8a042ff54f94acf44db1bfa1a61083e2403008b81a349b71705728c2f9f6b04"
-SRC_URL="https://raw.githubusercontent.com/gregkh/linux/v7.2.10/drivers/usb/gadget/udc/dummy_hcd.c"
-SRC_SHA256="7dd400f2b1723e23ec38721ab76787b0250c597b4401adeeb3e0e9ee4b239e57"
+KPKG="linux-armv7-headers-7.3.6-1-armv7h.pkg.tar.xz"
+KPKG_SHA256="25a8ee88fb62b14e3101f644b0c39d9a5e9ac631e477c1bc50bb4c652817f28b"
+SRC_URL="https://raw.githubusercontent.com/gregkh/linux/v7.3.6/drivers/usb/gadget/udc/dummy_hcd.c"
+SRC_SHA256="7e568599c2199a908a3bb44e8e018140d93d3178b01086f8930f81ded708986d"
 W="$HERE/work/dummy"; mkdir -p "$W"
 [ -f "$W/dummy_hcd.c" ] || curl -fsL -o "$W/dummy_hcd.c" "$SRC_URL"
 echo "$SRC_SHA256  $W/dummy_hcd.c" | shasum -a 256 -c - >/dev/null

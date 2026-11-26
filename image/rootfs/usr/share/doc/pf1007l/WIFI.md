@@ -5,7 +5,7 @@ The chip type and revision of this unit are not read yet. So the image does NOT 
 by itself (`/etc/modprobe.d/pf1007l-wifi.conf`).
 
 Files in this image:
-- Modules: `/usr/lib/modules/7.2.10-1-armv7-ARCH/updates/aic8800_bsp.ko`, `aic8800_fdrv.ko`, `aic8800_btlpm.ko`
+- Modules: `/usr/lib/modules/7.3.6-1-armv7-ARCH/updates/aic8800_bsp.ko`, `aic8800_fdrv.ko`, `aic8800_btlpm.ko`
 - Firmware: `/usr/lib/firmware/aic8800_fw/SDIO/aic8800DC/` (Radxa set, chip revision U02 only)
 
 Steps (from `wifi/README.md` section 9):

@@ -33,7 +33,7 @@ build() {
 
 activate() {
   [[ $(id -un) == "frame" && $(uname -m) == "armv7l" ]] || { echo "STOP: run on the frame as user frame"; exit 1; }
-  [[ $(uname -r) == 7.2.10-1-* ]] || { echo "STOP: tested only on kernel 7.2.10-1"; exit 1; }
+  [[ $(uname -r) == 7.3.6-1-* ]] || { echo "STOP: tested only on kernel 7.3.6-1"; exit 1; }
   sudo env ALL_PROXY="${ALL_PROXY:-}" pacman -S --noconfirm --needed \
     alsa-utils pipewire-audio pipewire-alsa pipewire-pulse
   build "$out"

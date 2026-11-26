@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Load test of kernel/out/panel-jadard-jd9365da-h3.ko on the REAL stock kernel
-# (boot/zImage of linux-armv7 7.2.10-1) in an emulator. Not the frame.
+# (boot/zImage of linux-armv7 7.3.6-1) in an emulator. Not the frame.
 #
 #   kernel/tools/qemu_loadtest.sh        (run kernel/build.sh first)
 #
@@ -15,9 +15,9 @@
 # Writes only to refs/kernel/qemu/ and kernel/logs/.
 set -euo pipefail
 
-KREL="7.2.10-1-armv7-ARCH"
-KPKG="linux-armv7-7.2.10-1-armv7h.pkg.tar.xz"
-KPKG_SHA256="b49a4d4dd1a99c1f71eced0fa9fc28d8348d8749a5db6696c56dcd77ade6ebca"
+KREL="7.3.6-1-armv7-ARCH"
+KPKG="linux-armv7-7.3.6-1-armv7h.pkg.tar.xz"
+KPKG_SHA256="2f5625602b47558d29ffffc8c87d55e56dc37e51e87520e9390e5025b32e84e1"
 BBPKG="busybox-1.36.1-4-armv7h.pkg.tar.xz"       # static busybox of Arch Linux ARM
 MIRROR="http://mirror.archlinuxarm.org/armv7h"
 MOD="panel-jadard-jd9365da-h3"

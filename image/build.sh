@@ -21,10 +21,10 @@ ALARM_URL="http://os.archlinuxarm.org/os/ArchLinuxARM-armv7-latest.tar.gz"
 ALARM_SHA256="${ALARM_SHA256:-ebe0fa119dea45e3af0aa61785676bdbf417bc5f754d529b87255dbf0ca4e3f0}"  # the file of 2026-08-05
 ALARM_TAG="tarball-20260805"
 
-KPKG="linux-armv7-7.2.10-1-armv7h.pkg.tar.xz"
+KPKG="linux-armv7-7.3.6-1-armv7h.pkg.tar.xz"
 KPKG_URL="http://mirror.archlinuxarm.org/armv7h/core/$KPKG"
-KPKG_SHA256="b49a4d4dd1a99c1f71eced0fa9fc28d8348d8749a5db6696c56dcd77ade6ebca"
-KVER="7.2.10-1-armv7-ARCH"
+KPKG_SHA256="2f5625602b47558d29ffffc8c87d55e56dc37e51e87520e9390e5025b32e84e1"
+KVER="7.3.6-1-armv7-ARCH"
 
 # Layout of the card image (MBR).
 SIG="50463037"                 # MBR disk signature -> PARTUUID=50463037-01 / -02
@@ -39,6 +39,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/.." && pwd)"
 CACHE="$HERE/cache"; WORK="$HERE/work"; OUT="$HERE/out"; SECRETS="$HERE/secrets"
 WES="$ROOT/refs/photo-frame-dashboard"
+. "$ROOT/wifi/aic8800-pin.sh"       # BASE_COMMIT, AIC_CLONE (radxa-pkg/aic8800 pin)
 BUILD_CT="pf1007l-rootfs-build"
 TOUCH_FW="${PF1007L_TOUCH_FIRMWARE:-$HERE/vendor/gsl_m86_hd.fw}"
 TOUCH_FW_SHA256="e11ffa8a33a56b78f8d2f57925fef1b67ea9a58c264bb5f3a8553ea52b14a9e6"
@@ -134,9 +135,9 @@ EOF
 # ---- step: dtbs -----------------------------------------------------------------
 step_dtbs() {
 	say "kernel device trees (min, pmic, full)"
-	local inc="$ROOT/refs/kernel/linux-7.2.10"
+	local inc="$ROOT/refs/kernel/linux-7.3.6"
 	[ -f "$inc/arch/arm/boot/dts/allwinner/sun8i-a33.dtsi" ] || inc="$ROOT/refs/linux-snippets"
-	[ -f "$inc/arch/arm/boot/dts/allwinner/sun8i-a33.dtsi" ] || stop "no kernel .dtsi files: need refs/kernel/linux-7.2.10 or refs/linux-snippets (see kernel/README.md)"
+	[ -f "$inc/arch/arm/boot/dts/allwinner/sun8i-a33.dtsi" ] || stop "no kernel .dtsi files: need refs/kernel/linux-7.3.6 or refs/linux-snippets (see kernel/README.md)"
 	[ -f "$ROOT/kernel/dts/sun8i-a33-pf1007l.dts" ] || stop "no board draft: kernel/dts/sun8i-a33-pf1007l.dts"
 	echo "include tree: ${inc#"$ROOT"/}"
 	fresh_dir "$WORK/dtbs"
@@ -219,9 +220,11 @@ step_rootfs() {
 	echo "$SIG" > "$in/disk-signature"
 	(cd "$ROOT/wifi/out" && shasum -a 256 -c SHA256SUMS >/dev/null) || stop "wifi/out: SHA256SUMS check failed"
 	cp "$ROOT"/wifi/out/*.ko "$in/wifi/"
-	local fw="$ROOT/refs/aic/radxa-pkg_aic8800/src/SDIO/driver_fw/fw/aic8800DC"
-	[ -d "$fw" ] || stop "no AIC8800DC firmware: run wifi/build.sh first (it clones radxa-pkg/aic8800)"
-	cp "$fw"/* "$in/aic8800DC/"
+	# The clone has no working tree; read the pinned commit's object.
+	local fw=src/SDIO/driver_fw/fw/aic8800DC
+	git -C "$AIC_CLONE" cat-file -e "${BASE_COMMIT}^{commit}" 2>/dev/null \
+		|| stop "no AIC8800DC firmware: run wifi/build.sh first (it fetches radxa-pkg/aic8800 $BASE_COMMIT)"
+	git -C "$AIC_CLONE" archive "$BASE_COMMIT" "$fw" | tar -x -C "$in/aic8800DC" --strip-components=5
 	cp "$TOUCH_FW" "$in/touch/gsl_m86_hd.fw"
 	cp "$SECRETS/frame_id_ed25519.pub" "$SECRETS/ssh_host_ed25519_key" "$SECRETS/ssh_host_ed25519_key.pub" "$in/secrets/"
 	if ls "$ROOT"/kernel/out/*.ko >/dev/null 2>&1; then cp "$ROOT"/kernel/out/*.ko "$in/kernel-out/"; fi

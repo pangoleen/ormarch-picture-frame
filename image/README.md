@@ -361,7 +361,7 @@ It does not block the gadget, the console or sshd.
 
 | Item | In the image | Note |
 |---|---|---|
-| Kernel | `linux-armv7 7.2.10-1`, the stock package (SHA-256 `b49a4d4d…6ebca`, signature checked by pacman) | `IgnorePkg = linux-armv7 linux-armv7-headers`: an update cannot break the out-of-tree modules |
+| Kernel | `linux-armv7 7.3.6-1`, the stock package (SHA-256 `2f562560…e84e1`, signature checked by pacman) | `IgnorePkg = linux-armv7 linux-armv7-headers`: an update cannot break the out-of-tree modules |
 | Panel module | `kernel/out/panel-jadard-jd9365da-h3.ko` → `updates/`, `depmod` | Loads by alias with the `full` label only |
 | Wi-Fi modules | `wifi/out/aic8800_{bsp,fdrv,btlpm}.ko` → `updates/` | **Not loaded automatically** (`/etc/modprobe.d/pf1007l-wifi.conf`) |
 | Wi-Fi firmware | `/usr/lib/firmware/aic8800_fw/SDIO/aic8800DC/` (Radxa set, revision U02 only) | Layout of `wifi/README.md` §6 |
@@ -417,9 +417,9 @@ Pinned inputs (`build.sh` stops on a mismatch):
 | U-Boot | commit `e50b1e8715011def8aff1588081a2649a2c6cd47` (v2025.10) |
 | Wes Bos's patch | SHA-256 `3aa2cbba09a096f9fd20b3f1a0d90c6d178ef7f311bf9f666e00d409a6d41351` (photo-frame-dashboard `9dd323e7`) |
 | `ArchLinuxARM-armv7-latest.tar.gz` | SHA-256 `ebe0fa119dea45e3af0aa61785676bdbf417bc5f754d529b87255dbf0ca4e3f0` (file of 2026-08-05; MD5 equal to the mirror's `.md5`) |
-| Kernel package | `linux-armv7-7.2.10-1`, SHA-256 `b49a4d4dd1a99c1f71eced0fa9fc28d8348d8749a5db6696c56dcd77ade6ebca` |
+| Kernel package | `linux-armv7-7.3.6-1`, SHA-256 `2f5625602b47558d29ffffc8c87d55e56dc37e51e87520e9390e5025b32e84e1` |
 | Wi-Fi modules | `wifi/out/SHA256SUMS` is checked |
-| Test-only `dummy_hcd.c` | Linux v7.2.10, SHA-256 `7dd400f2…239e57` |
+| Test-only `dummy_hcd.c` | Linux v7.3.6, SHA-256 `7e568599…08986d` |
 
 **Not reproducible bit for bit**: the root file system gets a full `pacman -Syu` from the live
 mirrors, because a partial upgrade of the August tarball is not supported by Arch. `out/packages.txt`

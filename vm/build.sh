@@ -6,7 +6,7 @@
 #
 # Inputs (pinned by SHA-256; the script stops if a hash is different):
 #   ArchLinuxARM-armv7-latest.tar.gz        root file system ("latest" is a moving name: the hash pins it)
-#   linux-armv7-7.2.10-1-armv7h.pkg.tar.xz  stock Arch Linux ARM kernel: zImage and modules
+#   linux-armv7-7.3.6-1-armv7h.pkg.tar.xz  stock Arch Linux ARM kernel: zImage and modules
 # The script reads them from image/cache/ (another agent's cache) if they are there, else it downloads to vm/cache/.
 set -euo pipefail
 VM=$(cd "$(dirname "$0")" && pwd)
@@ -15,10 +15,10 @@ ROOT=$(dirname "$VM")
 TARBALL=ArchLinuxARM-armv7-latest.tar.gz
 TARBALL_URL=http://os.archlinuxarm.org/os/$TARBALL
 TARBALL_SHA=ebe0fa119dea45e3af0aa61785676bdbf417bc5f754d529b87255dbf0ca4e3f0
-KPKG=linux-armv7-7.2.10-1-armv7h.pkg.tar.xz
+KPKG=linux-armv7-7.3.6-1-armv7h.pkg.tar.xz
 KPKG_URL=http://mirror.archlinuxarm.org/armv7h/core/$KPKG
-KPKG_SHA=b49a4d4dd1a99c1f71eced0fa9fc28d8348d8749a5db6696c56dcd77ade6ebca
-KVER=7.2.10-1-armv7-ARCH
+KPKG_SHA=2f5625602b47558d29ffffc8c87d55e56dc37e51e87520e9390e5025b32e84e1
+KVER=7.3.6-1-armv7-ARCH
 BUILDER_IMAGE=alpine:3          # native arm64 helper: only unpacks files and runs mke2fs
 DISK_SIZE=${DISK_SIZE:-10G}     # virtual size; the qcow2 file grows on use
 
@@ -53,7 +53,7 @@ shasum -a 256 "$VM/out/zImage" | tee "$VM/logs/zImage.sha256"
 # 2. SSH key for the test VM only (never used for another host).
 [[ -f $VM/keys/id_ed25519 ]] || ssh-keygen -q -t ed25519 -N '' -C omarchy-vm-test -f "$VM/keys/id_ed25519"
 
-# 3. Root file system: unpack the tarball in a container, add the 7.2.10-1 modules, write an ext4 image with
+# 3. Root file system: unpack the tarball in a container, add the 7.3.6-1 modules, write an ext4 image with
 #    mke2fs -d (no mount, no root on the host), then convert to qcow2 on the host.
 #    Left out to save disk space: /usr/lib/firmware (a VM needs none) and the old 7.1.6 kernel.
 #    Their entries are removed from the pacman database too, so "pacman -Syu" does not bring them back.
